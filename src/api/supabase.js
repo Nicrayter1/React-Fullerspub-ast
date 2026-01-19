@@ -5,28 +5,32 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-// Конфигурация Supabase
-const SUPABASE_URL = 'https://lmysveosqckpbyuldiym.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxteXN2ZW9zcWNrcGJ5dWxkaXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MTMxNTksImV4cCI6MjA4MDM4OTE1OX0.z1i_Fi7uCXnX3cml7RbTHR6RxIrxVY947iOCTi80fQY'
+// Конфигурация Supabase из переменных окружения
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+// Проверка наличия переменных окружения
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('Ошибка: Необходимо настроить переменные окружения VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY')
+}
+
+/**
+ * Клиент Supabase с настройками аутентификации
+ */
+export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,      // Сохраняет сессию в localStorage
+    autoRefreshToken: true,    // Автоматически продлевает токен
+    detectSessionInUrl: true   // Обнаруживает сессию из URL (для OAuth)
+  }
+})
 
 /**
  * Класс для работы с Supabase API
  */
 class SupabaseAPI {
   constructor() {
-    this.client = null
-    this.initialize()
-  }
-
-  /**
-   * Инициализация клиента Supabase
-   */
-  initialize() {
-    try {
-      this.client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    } catch (error) {
-      console.error('Ошибка инициализации Supabase:', error)
-    }
+    this.client = supabaseClient
   }
 
   /**
@@ -35,12 +39,12 @@ class SupabaseAPI {
    */
   async fetchCategories() {
     if (!this.client) throw new Error('Supabase не инициализирован')
-    
+
     const { data, error } = await this.client
       .from('categories')
       .select('*')
       .order('order_index')
-    
+
     if (error) throw error
     return data
   }
@@ -51,12 +55,12 @@ class SupabaseAPI {
    */
   async fetchProducts() {
     if (!this.client) throw new Error('Supabase не инициализирован')
-    
+
     const { data, error } = await this.client
       .from('products')
       .select('*')
       .order('category_id')
-    
+
     if (error) throw error
     return data
   }
@@ -68,12 +72,12 @@ class SupabaseAPI {
    */
   async updateProductStock(productId, updates) {
     if (!this.client) throw new Error('Supabase не инициализирован')
-    
+
     const { error } = await this.client
       .from('products')
       .update(updates)
       .eq('id', productId)
-    
+
     if (error) throw error
   }
 
@@ -83,7 +87,7 @@ class SupabaseAPI {
    */
   async syncAll(products) {
     if (!this.client) throw new Error('Supabase не инициализирован')
-    
+
     for (const product of products) {
       await this.updateProductStock(product.id, {
         bar1: product.bar1,
@@ -91,6 +95,24 @@ class SupabaseAPI {
         cold_room: product.cold_room || 0
       })
     }
+  }
+
+  /**
+   * Загрузка профиля пользователя
+   * @param {string} userId - UUID пользователя
+   * @returns {Promise<Object>} Профиль пользователя
+   */
+  async fetchUserProfile(userId) {
+    if (!this.client) throw new Error('Supabase не инициализирован')
+
+    const { data, error } = await this.client
+      .from('user_profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (error) throw error
+    return data
   }
 }
 
