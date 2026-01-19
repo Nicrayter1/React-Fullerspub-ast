@@ -1,34 +1,75 @@
+# Название этого workflow (отображается в GitHub Actions)
 name: Deploy to GitHub Pages
 
+# Когда запускать этот workflow
 on:
-  push:
+  push:                    # При каждом push
     branches:
-      - main
+      - main               # Только в ветку main (или master, если у вас master)
 
+# Права доступа для workflow
 permissions:
-  contents: write
+  contents: write          # Нужно чтобы workflow мог писать в ветку gh-pages
 
+# Задачи (jobs) которые нужно выполнить
 jobs:
+  # Название задачи (может быть любое)
   build-and-deploy:
+    
+    # На какой операционной системе запускать
+    # ubuntu-latest = последняя версия Ubuntu Linux
     runs-on: ubuntu-latest
     
+    # Шаги (steps) которые выполняются последовательно
     steps:
+      # ШАГ 1: Скачать код из репозитория
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        # uses: - использовать готовое действие
+        # actions/checkout@v4 - официальное действие от GitHub
+        # Что делает: git clone вашего репозитория
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      # ШАГ 2: Установить Node.js
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+        # Что делает: устанавливает Node.js версии 18
+        # Нужно для запуска npm команд
       
+      # ШАГ 3: Установить зависимости проекта
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+        # npm ci - аналог npm install, но быстрее и надежнее для CI/CD
+        # Устанавливает все пакеты из package-lock.json
+        # Аналогично тому что вы делаете локально: npm install
       
+      # ШАГ 4: Собрать проект (создать production сборку)
       - name: Build
+        env:
+          # ВАЖНО: Здесь подставляются секреты из GitHub
+          # ${{ secrets.НАЗВАНИЕ }} - синтаксис для доступа к секретам
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
+        # Что происходит:
+        # 1. GitHub берет секреты из настроек репозитория
+        # 2. Создает переменные окружения VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY
+        # 3. Запускает npm run build (из package.json → vite build)
+        # 4. Vite видит эти переменные и встраивает их в код
+        # 5. Результат сохраняется в папку dist/
       
-      - name: Deploy to GitHub Pages
+      # ШАГ 5: Опубликовать на GitHub Pages
+      - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
+        # Что делает:
+        # 1. Берет содержимое папки dist/
+        # 2. Создает/обновляет ветку gh-pages
+        # 3. Копирует туда все файлы из dist/
+        # 4. GitHub Pages автоматически публикует содержимое ветки gh-pages
+        #
+        # github_token - автоматически создается GitHub для каждого workflow
+        # publish_dir - какую папку публиковать (у нас это dist с результатом сборки)
