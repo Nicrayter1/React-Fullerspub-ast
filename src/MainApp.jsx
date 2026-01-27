@@ -126,25 +126,54 @@ function MainApp() {
     }
   }, [showNotification, loadFromLocalStorage])
 
+  /**
+   * ИСПРАВЛЕНО: Сохранение в Supabase с улучшенной обработкой ошибок
+   */
   const saveToSupabase = useCallback(async () => {
+    // Проверка что есть что сохранять
+    if (!products || products.length === 0) {
+      showNotification('Нет данных для сохранения', 'error')
+      return
+    }
+
     try {
       setLoading(true)
       showNotification('Сохранение в базу данных...', 'info')
-      await supabaseAPI.syncAll(products)
-      showNotification('Данные сохранены в БД!', 'success')
+      
+      console.log(`💾 Начало сохранения ${products.length} продуктов...`)
+      
+      // Вызываем улучшенную функцию syncAll
+      const result = await supabaseAPI.syncAll(products)
+      
+      console.log('✅ Результат сохранения:', result)
+      showNotification(
+        `Данные сохранены! Обновлено ${result.succeeded} из ${result.total} продуктов`,
+        'success'
+      )
+      
+      // После успешного сохранения обновляем localStorage
+      saveToLocalStorage()
+      
     } catch (error) {
-      console.error('Ошибка сохранения в Supabase:', error)
-      showNotification('Ошибка сохранения: ' + error.message, 'error')
+      console.error('❌ Ошибка сохранения в Supabase:', error)
+      
+      // Более информативное сообщение об ошибке
+      let errorMessage = 'Ошибка сохранения: '
+      if (error.message.includes('не удалось обновить')) {
+        errorMessage += error.message
+      } else if (error.message.includes('fetch')) {
+        errorMessage += 'Проблема с подключением к серверу'
+      } else {
+        errorMessage += error.message
+      }
+      
+      showNotification(errorMessage, 'error')
     } finally {
+      // КРИТИЧНО: Всегда сбрасываем loading, даже если была ошибка
       setLoading(false)
+      console.log('🏁 Сохранение завершено, loading = false')
     }
-  }, [products, showNotification])
-
-  const syncWithSupabase = useCallback(async () => {
-    if (window.confirm('Загрузить данные из базы? Текущие изменения будут потеряны.')) {
-      await loadFromSupabase()
-    }
-  }, [loadFromSupabase])
+  }, [products, showNotification, saveToLocalStorage])
 
   // === ИНИЦИАЛИЗАЦИЯ ===
 
