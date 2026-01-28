@@ -89,10 +89,14 @@ function MainApp() {
 
   // === РАБОТА С SUPABASE ===
 
+  /**
+   * Загрузка данных из Supabase
+   */
   const loadFromSupabase = useCallback(async () => {
     try {
       setLoading(true)
       showNotification('Загрузка данных из базы...', 'info')
+      console.log('📥 Начало загрузки из Supabase...')
 
       const cats = await supabaseAPI.fetchCategories()
       const prods = await supabaseAPI.fetchProducts()
@@ -116,15 +120,107 @@ function MainApp() {
         products: enrichedProducts
       }))
 
+      console.log('✅ Данные загружены из Supabase')
       showNotification('Данные загружены!', 'success')
     } catch (error) {
-      console.error('Ошибка загрузки из Supabase:', error)
+      console.error('❌ Ошибка загрузки из Supabase:', error)
       showNotification('Ошибка загрузки из БД. Используем локальные данные', 'error')
       loadFromLocalStorage()
     } finally {
       setLoading(false)
     }
   }, [showNotification, loadFromLocalStorage])
+
+  /**
+   * ИСПРАВЛЕНО: Сохранение в Supabase с улучшенной обработкой ошибок
+   */
+  const saveToSupabase = useCallback(async () => {
+    // Проверка что есть что сохранять
+    if (!products || products.length === 0) {
+      showNotification('Нет данных для сохранения', 'error')
+      return
+    }
+
+    try {
+      setLoading(true)
+      showNotification('Сохранение в базу данных...', 'info')
+      
+      console.log(`💾 Начало сохранения ${products.length} продуктов...`)
+      
+      // Вызываем улучшенную функцию syncAll
+      const result = await supabaseAPI.syncAll(products)
+      
+      console.log('✅ Результат сохранения:', result)
+      showNotification(
+        `Данные сохранены! Обновлено ${result.succeeded} из ${result.total} продуктов`,
+        'success'
+      )
+      
+      // После успешного сохранения обновляем localStorage
+      saveToLocalStorage()
+      
+    } catch (error) {
+      console.error('❌ Ошибка сохранения в Supabase:', error)
+      
+      // Более информативное сообщение об ошибке
+      let errorMessage = 'Ошибка сохранения: '
+      if (error.message.includes('не удалось обновить')) {
+        errorMessage += error.message
+      } else if (error.message.includes('fetch')) {
+        errorMessage += 'Проблема с подключением к серверу'
+      } else {
+        errorMessage += error.message
+      }
+      
+      showNotification(errorMessage, 'error')
+    } finally {
+      // КРИТИЧНО: Всегда сбрасываем loading, даже если была ошибка
+      setLoading(false)
+      console.log('🏁 Сохранение завершено, loading = false')
+    }
+  }, [products, showNotification, saveToLocalStorage])
+
+  /**
+   * Синхронизация с Supabase (загрузка свежих данных)
+   */
+  const syncWithSupabase = useCallback(async () => {
+    if (window.confirm('Загрузить данные из базы? Текущие изменения будут потеряны.')) {
+      console.log('🔄 Пользователь подтвердил синхронизацию')
+      await loadFromSupabase()
+    } else {
+      console.log('❌ Синхронизация отменена пользователем')
+    }
+  }, [loadFromSupabase])
+
+  // === ИНИЦИАЛИЗАЦИЯ ===
+
+  /**
+   * Инициализация приложения при первом рендере
+   * Загружает данные из localStorage или Supabase
+   */
+  useEffect(() => {
+    const init = async () => {
+      console.log('🚀 Инициализация приложения...')
+      
+      // Пробуем загрузить из localStorage
+      const hasLocalData = loadFromLocalStorage()
+      
+      if (!hasLocalData || products.length === 0) {
+        console.log('📥 Локальных данных нет, загружаем из Supabase...')
+        // Если нет локальных данных, загружаем из Supabase
+        if (supabaseAPI.client) {
+          await loadFromSupabase()
+        } else {
+          showNotification('Настройте подключение к Supabase', 'info')
+        }
+      } else {
+        console.log('✅ Данные загружены из localStorage')
+      }
+    }
+    
+    init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Выполняется только при первом монтировании)
 
   /**
    * ИСПРАВЛЕНО: Сохранение в Supabase с улучшенной обработкой ошибок
