@@ -69,7 +69,11 @@ class SupabaseAPI {
 
   /**
    * Загрузка всех продуктов из БД
-   * @returns {Promise<Array>} Массив продуктов
+   * 
+   * ВАЖНО: Сортируется по order_index для правильного порядка отображения
+   * Fallback на ID происходит на уровне ProductList.jsx
+   * 
+   * @returns {Promise<Array>} Массив продуктов, отсортированных по order_index
    */
   async fetchProducts() {
     if (!this.client) throw new Error('Supabase не инициализирован')
@@ -79,14 +83,14 @@ class SupabaseAPI {
     const { data, error } = await this.client
       .from('products')
       .select('*')
-      .order('category_id')
+      .order('order_index', { nullsLast: true })  // ← ИСПРАВЛЕНО: сортировка по order_index
 
     if (error) {
       console.error('❌ Ошибка загрузки продуктов:', error)
       throw error
     }
     
-    console.log(`✅ Загружено ${data.length} продуктов`)
+    console.log(`✅ Загружено ${data.length} продуктов (отсортировано по order_index)`)
     return data
   }
 
