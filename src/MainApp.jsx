@@ -348,44 +348,177 @@ function MainApp() {
     setEditModal({ isOpen: false, product: null, field: '', title: '' })
   }
 
-  const handleAddItem = ({ category, name, volume }) => {
+  /**
+   * ============================================================
+   * ОБРАБОТЧИК ДОБАВЛЕНИЯ ПРОДУКТА ИЛИ КАТЕГОРИИ
+   * ============================================================
+   * 
+   * ВЕРСИЯ v2.2.0 - ИСПРАВЛЕНО
+   * 
+   * ИСПРАВЛЕНИЯ:
+   * ✅ Использует INSERT запросы к Supabase вместо Date.now()
+   * ✅ PostgreSQL автоматически генерирует правильный ID
+   * ✅ Решена проблема "value out of range for type integer"
+   * ✅ Асинхронная функция с обработкой ошибок
+   * ✅ Показывает loading индикатор во время создания
+   * ✅ Автоматически сохраняет в localStorage
+   * 
+   * ПРОЦЕСС:
+   * 1. Проверка существования категории (для категорий)
+   * 2. Вызов insertCategory() или insertProduct() через API
+   * 3. PostgreSQL создает запись и возвращает её с ID
+   * 4. Добавление в локальное состояние
+   * 5. Сохранение в localStorage
+   * 6. Показ уведомления пользователю
+   * 
+   * @param {Object} params - Параметры добавления
+   * @param {string} params.category - Название категории
+   * @param {string} params.name - Название продукта (для продуктов)
+   * @param {string} params.volume - Объем продукта (для продуктов)
+   */
+  const handleAddItem = async ({ category, name, volume }) => {
+    // ============================================================
+    // ПОИСК КАТЕГОРИИ
+    // ============================================================
+    // Ищем объект категории по названию (case-insensitive)
     const categoryObj = categories.find(c =>
       c.name.toLowerCase() === category.toLowerCase()
     )
 
+    // ============================================================
+    // ДОБАВЛЕНИЕ КАТЕГОРИИ
+    // ============================================================
     if (addModal.type === 'category') {
+      // Проверяем не существует ли уже такая категория
       const exists = categories.some(c =>
         c.name.toLowerCase() === category.toLowerCase()
       )
+      
       if (!exists) {
-        const newCategory = {
-          id: Date.now(),
-          name: category,
-          order_index: categories.length + 1
+        try {
+          // Показываем индикатор загрузки
+          setLoading(true)
+          showNotification('Создание категории...', 'info')
+          
+          // ============================================================
+          // ВСТАВКА КАТЕГОРИИ В БД
+          // ============================================================
+          // Вызываем метод insertCategory из supabaseAPI
+          // PostgreSQL автоматически сгенерирует ID через SERIAL
+          const newCategory = await supabaseAPI.insertCategory({
+            name: category,
+            order_index: categories.length + 1
+          })
+          
+          // ============================================================
+          // ОБНОВЛЕНИЕ ЛОКАЛЬНОГО СОСТОЯНИЯ
+          // ============================================================
+          // Добавляем новую категорию в массив categories
+          setCategories(prev => [...prev, newCategory])
+          
+          // ============================================================
+          // СОХРАНЕНИЕ В LOCALSTORAGE
+          // ============================================================
+          // Обновляем localStorage чтобы данные сохранились
+          const updatedCategories = [...categories, newCategory]
+          localStorage.setItem('barStockData', JSON.stringify({
+            categories: updatedCategories,
+            products
+          }))
+          
+          // Показываем успешное уведомление
+          showNotification(`Категория "${category}" добавлена`, 'success')
+          
+        } catch (error) {
+          // ============================================================
+          // ОБРАБОТКА ОШИБОК
+          // ============================================================
+          console.error('❌ Ошибка добавления категории:', error)
+          showNotification(`Ошибка: ${error.message}`, 'error')
+        } finally {
+          // Всегда убираем индикатор загрузки
+          setLoading(false)
         }
-        setCategories(prev => [...prev, newCategory])
-        showNotification(`Категория "${category}" добавлена`, 'success')
       } else {
-        alert('Такая категория уже существует')
+        // Категория уже существует
+        showNotification('Такая категория уже существует', 'error')
       }
+    
+    // ============================================================
+    // ДОБАВЛЕНИЕ ПРОДУКТА
+    // ============================================================
     } else {
+      // Проверяем что категория найдена
       if (!categoryObj) {
-        alert('Категория не найдена')
+        showNotification('Категория не найдена', 'error')
         return
       }
-      const newProduct = {
-        id: Date.now(),
-        category_id: categoryObj.id,
-        name,
-        volume,
-        bar1: 0,
-        bar2: 0,
-        cold_room: 0,
-        category_name: category
+      
+      try {
+        // Показываем индикатор загрузки
+        setLoading(true)
+        showNotification('Создание продукта...', 'info')
+        
+        // ============================================================
+        // ВСТАВКА ПРОДУКТА В БД
+        // ============================================================
+        // Вызываем метод insertProduct из supabaseAPI
+        // PostgreSQL автоматически сгенерирует ID через SERIAL
+        // Это решает проблему с Date.now() (слишком большой ID)
+        const newProduct = await supabaseAPI.insertProduct({
+          category_id: categoryObj.id,
+          name,
+          volume,
+          bar1: 0,
+          bar2: 0,
+          cold_room: 0,
+          order_index: products.length + 1
+        })
+        
+        // ============================================================
+        // ОБОГАЩЕНИЕ ДАННЫХ
+        // ============================================================
+        // Добавляем название категории для удобства отображения
+        const enrichedProduct = {
+          ...newProduct,
+          category_name: category
+        }
+        
+        // ============================================================
+        // ОБНОВЛЕНИЕ ЛОКАЛЬНОГО СОСТОЯНИЯ
+        // ============================================================
+        // Добавляем новый продукт в массив products
+        setProducts(prev => [...prev, enrichedProduct])
+        
+        // ============================================================
+        // СОХРАНЕНИЕ В LOCALSTORAGE
+        // ============================================================
+        // Обновляем localStorage чтобы данные сохранились
+        const updatedProducts = [...products, enrichedProduct]
+        localStorage.setItem('barStockData', JSON.stringify({
+          categories,
+          products: updatedProducts
+        }))
+        
+        // Показываем успешное уведомление
+        showNotification(`Продукт "${name}" добавлен`, 'success')
+        
+      } catch (error) {
+        // ============================================================
+        // ОБРАБОТКА ОШИБОК
+        // ============================================================
+        console.error('❌ Ошибка добавления продукта:', error)
+        showNotification(`Ошибка: ${error.message}`, 'error')
+      } finally {
+        // Всегда убираем индикатор загрузки
+        setLoading(false)
       }
-      setProducts(prev => [...prev, newProduct])
-      showNotification(`Продукт "${name}" добавлен`, 'success')
     }
+    
+    // ============================================================
+    // ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА
+    // ============================================================
+    // Закрываем модальное окно после завершения операции
     setAddModal({ isOpen: false, type: 'product' })
   }
 
