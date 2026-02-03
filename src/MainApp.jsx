@@ -76,10 +76,19 @@ function MainApp() {
     return false
   }, [])
 
-  const saveToLocalStorage = useCallback(() => {
+  /**
+   * Сохранение в localStorage
+   * @param {boolean} showNotif - Показывать ли уведомление (по умолчанию false)
+   */
+  const saveToLocalStorage = useCallback((showNotif = false) => {
     try {
       localStorage.setItem('barStockData', JSON.stringify({ categories, products }))
-      showNotification('Данные сохранены локально!', 'success')
+      
+      // Показываем уведомление только если явно запрошено
+      if (showNotif) {
+        showNotification('✅ Данные сохранены локально!', 'success')
+      }
+      
       return true
     } catch (error) {
       showNotification('Ошибка сохранения: ' + error.message, 'error')
@@ -247,11 +256,11 @@ const saveToSupabase = useCallback(async () => {
       // ПОЛНЫЙ УСПЕХ - Все продукты сохранены
       // ============================================================
       showNotification(
-        `✅ Все данные сохранены! Обновлено ${result.updated} продуктов`,
+        `✅ Данные сохранены в БД! Обновлено ${result.updated} продуктов`,
         'success'
       )
       
-      // После успешного сохранения обновляем localStorage
+      // После успешного сохранения обновляем localStorage (тихо)
       saveToLocalStorage()
       
     } else if (result.updated > 0) {
@@ -259,11 +268,11 @@ const saveToSupabase = useCallback(async () => {
       // ЧАСТИЧНЫЙ УСПЕХ - Часть продуктов сохранена
       // ============================================================
       showNotification(
-        `⚠️ Частично сохранено: ${result.updated} из ${result.total} продуктов. ${result.failed} ошибок.`,
+        `⚠️ Частично сохранено в БД: ${result.updated} из ${result.total} продуктов. ${result.failed} ошибок.`,
         'warning'
       )
       
-      // Даже при частичном успехе сохраняем в localStorage
+      // Даже при частичном успехе сохраняем в localStorage (тихо)
       saveToLocalStorage()
       
       // Логируем детали ошибок
@@ -694,7 +703,7 @@ const saveToSupabase = useCallback(async () => {
           {/* Кнопки сохранения */}
           <div className="save-buttons">
             <button
-              onClick={saveToLocalStorage}
+              onClick={() => saveToLocalStorage(true)}
               className="save-btn local"
             >
               <Save className="btn-icon" /> Сохранить локально
