@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Plus, Save, Upload, Download, RefreshCw, LogOut, User } from 'lucide-react'
+import { Plus, Save, Upload, Download, RefreshCw, LogOut, User, Settings } from 'lucide-react'
 import { useAuth } from './AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 // Импорт компонентов
 import Notification from './components/Notification'
@@ -25,6 +26,7 @@ import './MainApp.css'
 
 function MainApp() {
   const { user, userProfile, signOut, getAvailableColumns } = useAuth()
+  const navigate = useNavigate()
 
   // === STATE MANAGEMENT ===
 
@@ -622,6 +624,12 @@ const saveToSupabase = useCallback(async () => {
                 <span className="user-role">{getRoleDisplayName(userProfile?.role)}</span>
               </div>
             </div>
+            {userProfile?.role === 'manager' && (
+              <button onClick={() => navigate('/admin')} className="admin-button">
+                <Settings className="admin-icon" />
+                <span>Админ-панель</span>
+              </button>
+            )}
             <button onClick={handleSignOut} className="logout-button">
               <LogOut className="logout-icon" />
               <span>Выйти</span>
