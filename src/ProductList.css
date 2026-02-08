@@ -3,17 +3,16 @@
  * ОПТИМИЗИРОВАННЫЕ СТИЛИ ДЛЯ СПИСКА ПРОДУКТОВ
  * ============================================================
  * 
- * Версия: 2.0.0 - ОПТИМИЗИРОВАНО
- * Дата: 2026-02-01
+ * Версия: 3.0.0 - МОБИЛЬНАЯ ОПТИМИЗАЦИЯ
+ * Дата: 2026-02-09
  * 
  * ИСПРАВЛЕНИЯ:
- * ✅ Уменьшены отступы в заголовках таблицы
- * ✅ Уменьшены отступы между строками
- * ✅ Кнопки "Холод. комната" того же размера что и остальные
- * ✅ Все помещается на экран без прокрутки
- * ✅ Оптимизация для экранов 375px и больше
+ * ✅ Табличная верстка остается на мобильных (как на скриншоте)
+ * ✅ Уменьшены отступы для компактности
+ * ✅ Оптимизированы размеры кнопок
+ * ✅ Все помещается без горизонтального скролла
  * 
- * @version 2.0.0
+ * @version 3.0.0
  * ============================================================
  */
 
@@ -100,13 +99,22 @@
 }
 
 .product-row:hover {
-  background: #f9fafb;
+  background-color: #f9fafb;
 }
 
 .product-row td {
   padding: 0.5rem;
   border-bottom: 1px solid #e5e7eb;
-  color: #374151;
+}
+
+.product-row td.col-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.product-row td.col-volume {
+  color: #6b7280;
+  font-size: 0.875rem;
 }
 
 .product-row td.col-stock {
@@ -115,87 +123,31 @@
 }
 
 /* ============================================================ */
-/* КНОПКА РЕДАКТИРОВАНИЯ ОСТАТКОВ */
+/* КНОПКИ ИЗМЕНЕНИЯ ЗНАЧЕНИЙ */
 /* ============================================================ */
 .stock-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 60px;
   width: 100%;
+  min-width: 60px;
   padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #1f2937;
-  background: white;
-  border: 1px solid #d1d5db;
+  background-color: #374151;
+  color: white;
+  border: none;
   border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .stock-button:hover {
-  background: #f3f4f6;
-  border-color: #3b82f6;
-  color: #3b82f6;
+  background-color: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .stock-button:active {
-  transform: scale(0.98);
-}
-
-/* ============================================================ */
-/* ТЕМНАЯ ТЕМА */
-/* ============================================================ */
-@media (prefers-color-scheme: dark) {
-  .product-list {
-    border-color: #374151;
-  }
-
-  .product-list-empty {
-    background: #1f2937;
-    border-color: #374151;
-    color: #9ca3af;
-  }
-
-  .product-table thead tr {
-    background: #1f2937;
-  }
-
-  .product-table th {
-    color: #d1d5db;
-    border-bottom-color: #374151;
-  }
-
-  .category-row td {
-    background: #111827;
-    border-bottom-color: #374151;
-  }
-
-  .category-name {
-    color: #f3f4f6;
-  }
-
-  .product-row:hover {
-    background: #111827;
-  }
-
-  .product-row td {
-    border-bottom-color: #374151;
-    color: #d1d5db;
-  }
-
-  .stock-button {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f3f4f6;
-  }
-
-  .stock-button:hover {
-    background: #4b5563;
-    border-color: #3b82f6;
-    color: #60a5fa;
-  }
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================================ */
@@ -203,118 +155,93 @@
 /* ============================================================ */
 /* 
  * МОБИЛЬНАЯ ВЕРСИЯ v3.0:
- * - Карточная верстка для удобства
- * - Кнопки вертикально (одна над другой)
- * - Не нужно листать горизонтально
- * - Оптимизировано для телефонов
+ * - Табличная верстка сохраняется (как на скриншоте)
+ * - Уменьшены отступы для компактности
+ * - Оптимизированы размеры для телефонов
+ * - Все помещается без горизонтального скролла
  */
 @media (max-width: 640px) {
   /* ============================================================ */
-  /* СКРЫВАЕМ ОБЫЧНУЮ ТАБЛИЦУ */
+  /* ОБЩАЯ ТАБЛИЦА */
   /* ============================================================ */
-  .product-table thead {
-    display: none; /* Скрываем заголовки таблицы */
+  .product-table {
+    font-size: 0.75rem;
   }
 
   /* ============================================================ */
-  /* СТРОКА КАТЕГОРИИ */
+  /* ЗАГОЛОВКИ - КОМПАКТНЫЕ */
   /* ============================================================ */
-  .category-row {
-    display: table-row !important; /* Оставляем категории как есть */
-  }
-
-  .category-row td {
-    display: table-cell !important;
-    padding: 0.625rem 0.75rem;
-    background: #f9fafb;
-    border-bottom: 2px solid #e5e7eb;
+  .product-table th {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.7rem;
+    line-height: 1.2;
   }
 
   /* ============================================================ */
-  /* КАРТОЧНАЯ ВЕРСТКА ДЛЯ ПРОДУКТОВ */
+  /* СТРОКИ ПРОДУКТОВ - КОМПАКТНЫЕ */
   /* ============================================================ */
-  .product-row {
-    display: block; /* Превращаем строку в блок */
-    margin-bottom: 0.75rem;
-    padding: 0.75rem;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  .product-row:hover {
-    background: #f9fafb;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  }
-
   .product-row td {
-    display: block; /* Каждая ячейка на новой строке */
-    padding: 0;
-    border: none;
-    text-align: left;
+    padding: 0.375rem 0.25rem;
+  }
+  
+  .product-row td.col-stock {
+    padding: 0.25rem 0.15rem;
   }
 
-  /* ============================================================ */
-  /* НАЗВАНИЕ И ОБЪЕМ */
-  /* ============================================================ */
   .product-row td.col-name {
-    font-weight: 600;
-    font-size: 1rem;
-    color: #1f2937;
-    margin-bottom: 0.25rem;
+    font-size: 0.8125rem;
   }
 
   .product-row td.col-volume {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.75rem;
   }
 
   /* ============================================================ */
-  /* КНОПКИ СТОКОВ - ВЕРТИКАЛЬНО */
+  /* СТРОКА КАТЕГОРИИ - КОМПАКТНАЯ */
   /* ============================================================ */
-  .product-row td.col-stock {
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .category-row td {
+    padding: 0.5rem 0.25rem;
   }
 
-  /* Добавляем метки перед кнопками */
-  .product-row td.col-stock::before {
-    content: attr(data-label);
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: #374151;
-    flex: 0 0 auto;
-    margin-right: 1rem;
+  .category-name {
+    font-size: 0.8125rem;
   }
 
-  /* Бар 1 */
-  .product-row td.col-stock:nth-of-type(3)::before {
-    content: "Бар 1:";
+  .category-count {
+    font-size: 0.6875rem;
   }
 
-  /* Бар 2 */
-  .product-row td.col-stock:nth-of-type(4)::before {
-    content: "Бар 2:";
-  }
-
-  /* Холодная комната */
-  .product-row td.col-stock:nth-of-type(5)::before {
-    content: "Холод. комната:";
-  }
-
+  /* ============================================================ */
+  /* КНОПКИ - КОМПАКТНЫЕ НО УДОБНЫЕ */
+  /* ============================================================ */
   .stock-button {
-    min-width: 80px;
-    max-width: 80px;
-    width: 80px;
-    padding: 0.625rem 1rem;
-    font-size: 1rem;
-    font-weight: 600;
+    min-width: 50px;
+    max-width: 70px;
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 4px;
+  }
+
+  /* ============================================================ */
+  /* ОПТИМИЗАЦИЯ ШИРИНЫ КОЛОНОК */
+  /* ============================================================ */
+  .product-table th.col-name,
+  .product-table th.col-volume,
+  .product-table th.col-stock {
+    min-width: auto;
+  }
+  
+  .product-table th.col-name {
+    width: 35%;
+  }
+  
+  .product-table th.col-volume {
+    width: 12%;
+  }
+  
+  .product-table th.col-stock {
+    width: 17.66%;
   }
 }
 
@@ -322,43 +249,45 @@
 /* ДОПОЛНИТЕЛЬНАЯ ОПТИМИЗАЦИЯ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
 /* ============================================================ */
 @media (max-width: 400px) {
-  .product-row {
-    padding: 0.625rem;
-    margin-bottom: 0.5rem;
+  .product-table {
+    font-size: 0.7rem;
+  }
+  
+  .product-table th {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.65rem;
+  }
+
+  .product-row td {
+    padding: 0.3rem 0.2rem;
+  }
+
+  .product-row td.col-stock {
+    padding: 0.2rem 0.1rem;
+  }
+  
+  .stock-button {
+    min-width: 45px;
+    max-width: 65px;
+    padding: 0.35rem 0.45rem;
+    font-size: 0.7rem;
+  }
+  
+  .category-name {
+    font-size: 0.75rem;
+  }
+  
+  .category-count {
+    font-size: 0.65rem;
   }
 
   .product-row td.col-name {
-    font-size: 0.9375rem;
+    font-size: 0.75rem;
   }
 
   .product-row td.col-volume {
-    font-size: 0.8125rem;
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-
-  .product-row td.col-stock::before {
-    font-size: 0.8125rem;
-  }
-
-  .stock-button {
-    min-width: 70px;
-    max-width: 70px;
-    width: 70px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9375rem;
-  }
-
-  .category-row td {
-    padding: 0.5rem 0.625rem;
-  }
-
-  .category-name {
-    font-size: 0.875rem;
-  }
-
-  .category-count {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 }
+
 /* Конец файла */
