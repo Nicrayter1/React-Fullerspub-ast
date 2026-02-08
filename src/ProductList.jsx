@@ -1,6 +1,3 @@
-
- 
-
 import React from 'react'
 import { formatNumber } from './utils/format'
 import './ProductList.css'
@@ -54,9 +51,11 @@ function ProductList({ products, searchQuery, categoryId, availableColumns, onEd
   /**
    * Фильтрация продуктов по поисковому запросу и категории
    * 
-   * Применяет два фильтра:
+   * Применяет фильтры:
    *  1. По категории (если выбрана конкретная категория)
-   *  2. По поисковому запросу (имя продукта или категории)
+   *  2. По заморозке (скрываем замороженные продукты)
+   *  3. По видимости (проверяем visible_to_bar1/bar2)
+   *  4. По поисковому запросу (имя продукта или категории)
    * 
    * @returns {Array} Отфильтрованный массив продуктов
    */
@@ -66,7 +65,27 @@ function ProductList({ products, searchQuery, categoryId, availableColumns, onEd
       return false
     }
 
-    // Фильтр #2: По поисковому запросу
+    // Фильтр #2: Скрываем замороженные продукты
+    if (product.is_frozen) {
+      return false
+    }
+
+    // Фильтр #3: По видимости для текущего бара
+    // Определяем какие колонки доступны пользователю
+    if (availableColumns.includes('bar1') && !availableColumns.includes('bar2')) {
+      // Только bar1 - проверяем visible_to_bar1
+      if (!product.visible_to_bar1) {
+        return false
+      }
+    } else if (availableColumns.includes('bar2') && !availableColumns.includes('bar1')) {
+      // Только bar2 - проверяем visible_to_bar2
+      if (!product.visible_to_bar2) {
+        return false
+      }
+    }
+    // Для менеджера (все колонки) - показываем все незамороженные
+
+    // Фильтр #4: По поисковому запросу
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       return (
@@ -240,6 +259,3 @@ function ProductList({ products, searchQuery, categoryId, availableColumns, onEd
 }
 
 export default ProductList
-
-
- 
