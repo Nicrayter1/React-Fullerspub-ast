@@ -5,25 +5,26 @@
  * 
  * Компонент для отображения и управления продуктами
  * Поддерживает drag & drop для изменения порядка
+ * Использует ТЕМНУЮ ТЕМУ как в основном приложении
  * 
  * ФУНКЦИИ:
- * - Отображение продуктов в виде таблицы
+ * - Отображение продуктов в темной теме
  * - Drag & drop для изменения порядка
  * - Действия: заморозка, разморозка, удаление
  * - Индикаторы статуса (заморожен/активен)
  * 
- * @version 1.0.0
+ * @version 2.0.0
  * @author Admin Team
  * @date 2026-02-05
  * ============================================================
  */
 
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import './AdminProductList.css'
 
 /**
  * ============================================================
- * КОМПОНЕНТ ПРОДУКТА
+ * КОМПОНЕНТ СТРОКИ ПРОДУКТА
  * ============================================================
  */
 const ProductRow = ({
@@ -38,12 +39,9 @@ const ProductRow = ({
   onUnfreeze,
   onDelete
 }) => {
-  const rowRef = useRef(null)
-
   return (
-    <div
-      ref={rowRef}
-      className={`product-row ${isDragging ? 'dragging' : ''} ${product.is_frozen ? 'frozen' : ''}`}
+    <tr
+      className={`product-row ${isDragging ? 'dragging' : ''} ${product.is_frozen ? 'frozen-product' : ''}`}
       draggable={true}
       onDragStart={(e) => onDragStart(e, index)}
       onDragEnd={onDragEnd}
@@ -51,63 +49,34 @@ const ProductRow = ({
       onDrop={(e) => onDrop(e, index)}
     >
       {/* Drag Handle */}
-      <div className="drag-handle" title="Перетащите для изменения порядка">
-        <span>⋮⋮</span>
-      </div>
-
-      {/* Order Index */}
-      <div className="product-cell order-cell">
-        {product.order_index || '-'}
-      </div>
+      <td className="drag-handle-cell">
+        <span className="drag-handle" title="Перетащите для изменения порядка">⋮⋮</span>
+      </td>
 
       {/* Product Name */}
-      <div className="product-cell name-cell">
-        <div className="product-name">
-          {product.name}
-          {product.is_frozen && (
-            <span className="frozen-badge" title="Продукт заморожен">❄️</span>
-          )}
-        </div>
-        <div className="product-volume">{product.volume}</div>
-      </div>
+      <td className="col-name">
+        {product.name}
+        {product.is_frozen && (
+          <span className="frozen-badge" title="Продукт заморожен"> ❄️</span>
+        )}
+      </td>
+
+      {/* Volume */}
+      <td className="col-volume">{product.volume}</td>
 
       {/* Stock Levels */}
-      <div className="product-cell stock-cell">
-        <span className="stock-label">Bar 1:</span>
-        <span className="stock-value">{product.bar1}</span>
-      </div>
-      <div className="product-cell stock-cell">
-        <span className="stock-label">Bar 2:</span>
-        <span className="stock-value">{product.bar2}</span>
-      </div>
-      <div className="product-cell stock-cell">
-        <span className="stock-label">Cold Room:</span>
-        <span className="stock-value">{product.cold_room}</span>
-      </div>
-
-      {/* Visibility Status */}
-      <div className="product-cell visibility-cell">
-        <div className="visibility-badges">
-          {!product.visible_to_bar1 && (
-            <span className="visibility-badge hidden" title="Скрыт от Bar 1">
-              Bar1 🚫
-            </span>
-          )}
-          {!product.visible_to_bar2 && (
-            <span className="visibility-badge hidden" title="Скрыт от Bar 2">
-              Bar2 🚫
-            </span>
-          )}
-          {product.visible_to_bar1 && product.visible_to_bar2 && (
-            <span className="visibility-badge visible" title="Виден всем">
-              ✓ Виден
-            </span>
-          )}
-        </div>
-      </div>
+      <td className="col-stock">
+        <div className="stock-display">{product.bar1}</div>
+      </td>
+      <td className="col-stock">
+        <div className="stock-display">{product.bar2}</div>
+      </td>
+      <td className="col-stock">
+        <div className="stock-display">{product.cold_room}</div>
+      </td>
 
       {/* Actions */}
-      <div className="product-cell actions-cell">
+      <td className="col-actions">
         <div className="action-buttons">
           {/* Freeze/Unfreeze Button */}
           {!product.is_frozen ? (
@@ -137,8 +106,8 @@ const ProductRow = ({
             🗑️
           </button>
         </div>
-      </div>
-    </div>
+      </td>
+    </tr>
   )
 }
 
@@ -177,7 +146,6 @@ const AdminProductList = ({
   const handleDragStart = (e, index) => {
     setDraggedIndex(index)
     e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/html', e.currentTarget)
   }
 
   /**
@@ -227,6 +195,30 @@ const AdminProductList = ({
   }
 
   // ============================================================
+  // ГРУППИРОВКА ПО КАТЕГОРИЯМ
+  // ============================================================
+  
+  // Группируем продукты по категориям
+  const groupedProducts = localProducts.reduce((acc, product) => {
+    const categoryId = product.category_id
+    const category = categories.find(c => c.id === categoryId)
+    const categoryName = category ? category.name : 'Без категории'
+    
+    if (!acc[categoryName]) {
+      acc[categoryName] = []
+    }
+    acc[categoryName].push(product)
+    return acc
+  }, {})
+
+  // Сортируем категории по order_index
+  const sortedCategories = Object.keys(groupedProducts).sort((a, b) => {
+    const catA = categories.find(c => c.name === a)
+    const catB = categories.find(c => c.name === b)
+    return (catA?.order_index || 999) - (catB?.order_index || 999)
+  })
+
+  // ============================================================
   // СТАТИСТИКА
   // ============================================================
   
@@ -239,7 +231,11 @@ const AdminProductList = ({
   // ============================================================
   
   if (products.length === 0) {
-    return null
+    return (
+      <div className="admin-product-list-empty">
+        <p>Продукты не найдены</p>
+      </div>
+    )
   }
 
   return (
@@ -260,35 +256,58 @@ const AdminProductList = ({
         </div>
       </div>
 
-      {/* TABLE HEADER */}
-      <div className="product-list-header">
-        <div className="header-cell drag-cell"></div>
-        <div className="header-cell order-cell">#</div>
-        <div className="header-cell name-cell">Название</div>
-        <div className="header-cell stock-cell">Bar 1</div>
-        <div className="header-cell stock-cell">Bar 2</div>
-        <div className="header-cell stock-cell">Cold Room</div>
-        <div className="header-cell visibility-cell">Видимость</div>
-        <div className="header-cell actions-cell">Действия</div>
-      </div>
+      {/* TABLE */}
+      <div className="product-table-container">
+        <table className="product-table">
+          {/* TABLE HEADER */}
+          <thead>
+            <tr>
+              <th className="drag-handle-header"></th>
+              <th className="col-name">Наименование</th>
+              <th className="col-volume">Тара, мл</th>
+              <th className="col-stock">Бар 1 (Факт)</th>
+              <th className="col-stock">Бар 2 (Факт)</th>
+              <th className="col-stock">Холод. комната (Факт)</th>
+              <th className="col-actions">Действия</th>
+            </tr>
+          </thead>
 
-      {/* PRODUCT ROWS */}
-      <div className="product-list-body">
-        {localProducts.map((product, index) => (
-          <ProductRow
-            key={product.id}
-            product={product}
-            index={index}
-            isDragging={draggedIndex === index}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onFreeze={onFreeze}
-            onUnfreeze={onUnfreeze}
-            onDelete={onDelete}
-          />
-        ))}
+          {/* TABLE BODY */}
+          <tbody>
+            {sortedCategories.map(categoryName => {
+              const categoryProducts = groupedProducts[categoryName]
+              
+              return (
+                <React.Fragment key={categoryName}>
+                  {/* CATEGORY ROW */}
+                  <tr className="category-row">
+                    <td colSpan="7">
+                      <span className="category-name">{categoryName}</span>
+                      <span className="category-count">({categoryProducts.length})</span>
+                    </td>
+                  </tr>
+
+                  {/* PRODUCT ROWS */}
+                  {categoryProducts.map((product, index) => (
+                    <ProductRow
+                      key={product.id}
+                      product={product}
+                      index={localProducts.indexOf(product)}
+                      isDragging={draggedIndex === localProducts.indexOf(product)}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      onFreeze={onFreeze}
+                      onUnfreeze={onUnfreeze}
+                      onDelete={onDelete}
+                    />
+                  ))}
+                </React.Fragment>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
 
       {/* HELP TEXT */}
