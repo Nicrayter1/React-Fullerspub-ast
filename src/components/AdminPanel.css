@@ -1,6 +1,7 @@
 /**
  * ============================================================
  * СТИЛИ ДЛЯ АДМИН-ПАНЕЛИ
+ * ТЕМНАЯ ТЕМА как в основном приложении
  * ============================================================
  */
 
@@ -10,8 +11,7 @@
 
 .admin-panel {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding-bottom: 2rem;
+  background: #111827;
 }
 
 /* ============================================================
@@ -19,10 +19,10 @@
    ============================================================ */
 
 .admin-panel-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
   color: white;
   padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .header-content {
@@ -37,18 +37,20 @@
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
+  color: white;
 }
 
 .header-subtitle {
   margin: 0.5rem 0 0 0;
-  opacity: 0.9;
+  opacity: 0.8;
   font-size: 1rem;
+  color: #d1d5db;
 }
 
 .header-right .btn-secondary {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   cursor: pointer;
@@ -57,9 +59,9 @@
 }
 
 .header-right .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================================
@@ -72,10 +74,11 @@
   display: flex;
   gap: 0.5rem;
   padding: 1rem 2rem 0;
+  background: #111827;
 }
 
 .admin-panel-tabs .tab {
-  background: white;
+  background: #1f2937;
   border: none;
   border-radius: 12px 12px 0 0;
   padding: 1rem 2rem;
@@ -83,19 +86,22 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: #666;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  color: #9ca3af;
+  box-shadow: none;
+  border: 1px solid #374151;
+  border-bottom: none;
 }
 
 .admin-panel-tabs .tab:hover {
-  background: #f8f9fa;
-  transform: translateY(-2px);
+  background: #374151;
+  color: #e5e7eb;
 }
 
 .admin-panel-tabs .tab.active {
-  background: white;
-  color: #667eea;
-  box-shadow: 0 -4px 12px rgba(102, 126, 234, 0.15);
+  background: #1f2937;
+  color: #60a5fa;
+  border-color: #60a5fa;
+  box-shadow: 0 -4px 12px rgba(96, 165, 250, 0.2);
 }
 
 /* ============================================================
@@ -106,10 +112,11 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
-  background: white;
+  background: #1f2937;
   border-radius: 0 12px 12px 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   min-height: 600px;
+  border: 1px solid #374151;
 }
 
 /* ============================================================
@@ -121,10 +128,11 @@
   flex-wrap: wrap;
   gap: 1rem;
   padding: 1.5rem;
-  background: #f8f9fa;
+  background: #374151;
   border-radius: 12px;
   margin-bottom: 2rem;
   align-items: flex-end;
+  border: 1px solid #4b5563;
 }
 
 .control-group {
@@ -136,24 +144,31 @@
 .control-group label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #555;
+  color: #e5e7eb;
 }
 
 .select-category,
 .search-input {
   padding: 0.75rem 1rem;
-  border: 2px solid #e0e0e0;
+  border: 2px solid #4b5563;
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.3s ease;
   min-width: 200px;
+  background: #1f2937;
+  color: #e5e7eb;
 }
 
 .select-category:focus,
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.select-category option {
+  background: #1f2937;
+  color: #e5e7eb;
 }
 
 .checkbox-group {
@@ -168,6 +183,7 @@
   gap: 0.5rem;
   cursor: pointer;
   user-select: none;
+  color: #e5e7eb;
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -177,7 +193,7 @@
 }
 
 .btn-refresh {
-  background: #667eea;
+  background: #1e3a8a;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -189,9 +205,9 @@
 }
 
 .btn-refresh:hover {
-  background: #5568d3;
+  background: #1e40af;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.5);
 }
 
 /* ============================================================
@@ -201,7 +217,7 @@
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: #999;
+  color: #6b7280;
 }
 
 .empty-state p:first-child {
@@ -211,7 +227,7 @@
 
 .empty-state-hint {
   font-size: 1rem;
-  color: #666;
+  color: #9ca3af;
 }
 
 /* ============================================================
@@ -223,32 +239,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #111827;
 }
 
 .access-denied-card {
-  background: white;
+  background: #1f2937;
   padding: 3rem;
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   text-align: center;
   max-width: 500px;
+  border: 1px solid #374151;
 }
 
 .access-denied-card h2 {
-  color: #e74c3c;
+  color: #ef4444;
   font-size: 2rem;
   margin-bottom: 1rem;
 }
 
 .access-denied-card p {
-  color: #666;
+  color: #9ca3af;
   font-size: 1.1rem;
   margin-bottom: 2rem;
 }
 
 .access-denied-card .btn-primary {
-  background: #667eea;
+  background: #1e3a8a;
   color: white;
   border: none;
   padding: 1rem 2rem;
@@ -259,9 +276,9 @@
 }
 
 .access-denied-card .btn-primary:hover {
-  background: #5568d3;
+  background: #1e40af;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.5);
 }
 
 /* ============================================================
@@ -274,14 +291,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #111827;
 }
 
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+  border: 4px solid #374151;
+  border-top: 4px solid #60a5fa;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -293,7 +310,7 @@
 }
 
 .admin-panel-loading p {
-  color: #666;
+  color: #9ca3af;
   font-size: 1.1rem;
 }
 
