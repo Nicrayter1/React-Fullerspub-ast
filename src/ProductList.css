@@ -1,23 +1,19 @@
 /**
  * ============================================================
- * СТИЛИ ДЛЯ СПИСКА ПРОДУКТОВ - MOBILE FIRST
+ * СТИЛИ ДЛЯ СПИСКА ПРОДУКТОВ - ЭКСТРЕМАЛЬНО КОМПАКТНЫЙ
  * ============================================================
  * 
- * Версия: 3.0.0 - РАДИКАЛЬНОЕ РЕШЕНИЕ
+ * Версия: 4.0.0 - ZERO PADDING
  * Дата: 2026-02-09
  * 
  * СТРАТЕГИЯ:
- * ✅ Таблица ограничена по ширине max-width
- * ✅ Все стили с !important
- * ✅ Mobile-first подход
+ * ✅ Минимальные отступы (почти 0)
+ * ✅ Заголовки всегда видны
+ * ✅ Максимально сжатые колонки
  * 
- * @version 3.0.0
+ * @version 4.0.0
  * ============================================================
  */
-
-/* ============================================================ */
-/* БАЗОВЫЕ СТИЛИ - МОБИЛЬНЫЕ ПО УМОЛЧАНИЮ */
-/* ============================================================ */
 
 .product-list {
   border: 1px solid #e5e7eb;
@@ -25,7 +21,7 @@
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch;
   margin-bottom: 1rem;
-  max-width: 100vw !important;
+  width: 100% !important;
 }
 
 .product-list-empty {
@@ -40,64 +36,74 @@
 
 .product-table {
   width: 100% !important;
-  max-width: 100% !important;
   border-collapse: collapse;
-  font-size: 0.7rem;
   table-layout: fixed !important;
+  font-size: 0.7rem;
 }
 
 /* ============================================================ */
-/* ЗАГОЛОВОК ТАБЛИЦЫ - МОБИЛЬНЫЙ */
+/* ЗАГОЛОВОК ТАБЛИЦЫ - ВСЕГДА ВИДНЫ */
 /* ============================================================ */
+.product-table thead {
+  display: table-header-group !important;
+}
+
 .product-table thead tr {
-  background: #f3f4f6;
+  background: #f3f4f6 !important;
+  display: table-row !important;
 }
 
 .product-table thead tr th {
-  padding: 0.4rem 0.1rem !important;
+  display: table-cell !important;
+  padding: 0.3rem 0.05rem !important;
   text-align: left;
   font-weight: 600;
-  font-size: 0.65rem !important;
+  font-size: 0.6rem !important;
   color: #374151;
-  border-bottom: 2px solid #e5e7eb;
-  white-space: nowrap;
-  line-height: 1.1 !important;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: normal !important;
+  line-height: 1 !important;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  vertical-align: middle;
 }
 
+/* Колонка Наименование - 35% */
 .product-table th.col-name {
-  width: 32% !important;
+  width: 35% !important;
   min-width: 0 !important;
-  max-width: 32% !important;
+  padding-left: 0.2rem !important;
 }
 
+/* Колонка Тара - 10% */
 .product-table th.col-volume {
   width: 10% !important;
   min-width: 0 !important;
-  max-width: 10% !important;
-}
-
-.product-table th.col-stock {
-  width: 19.33% !important;
-  min-width: 0 !important;
-  max-width: 19.33% !important;
   text-align: center !important;
 }
 
+/* Колонки со стоками - по 18.33% каждая (55% на 3) */
+.product-table th.col-stock {
+  width: 18.33% !important;
+  min-width: 0 !important;
+  text-align: center !important;
+  font-size: 0.55rem !important;
+}
+
 /* ============================================================ */
-/* СТРОКА КАТЕГОРИИ - МОБИЛЬНАЯ */
+/* СТРОКА КАТЕГОРИИ */
 /* ============================================================ */
 .category-row td {
-  padding: 0.4rem 0.1rem !important;
+  padding: 0.3rem 0.2rem !important;
   background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
+  font-size: 0.7rem !important;
 }
 
 .category-name {
   font-weight: 600;
   color: #1f2937;
-  margin-right: 0.5rem;
+  margin-right: 0.3rem;
   font-size: 0.7rem !important;
 }
 
@@ -107,7 +113,7 @@
 }
 
 /* ============================================================ */
-/* СТРОКА ПРОДУКТА - МОБИЛЬНАЯ */
+/* СТРОКА ПРОДУКТА */
 /* ============================================================ */
 .product-row {
   transition: background-color 0.15s ease;
@@ -118,41 +124,52 @@
 }
 
 .product-row td {
-  padding: 0.3rem 0.1rem !important;
+  padding: 0.25rem 0.05rem !important;
   border-bottom: 1px solid #e5e7eb;
   color: #374151;
-  font-size: 0.7rem !important;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.68rem !important;
+  line-height: 1.2;
+  vertical-align: middle;
 }
 
+/* Колонка с названием - больше padding слева */
+.product-row td:first-child {
+  padding-left: 0.2rem !important;
+}
+
+/* Колонка Тара - по центру */
+.product-row td.col-volume {
+  text-align: center !important;
+}
+
+/* Колонки со стоками - минимальный padding */
 .product-row td.col-stock {
   text-align: center !important;
-  padding: 0.15rem 0.05rem !important;
+  padding: 0.15rem 0.02rem !important;
 }
 
 /* ============================================================ */
-/* КНОПКИ - МОБИЛЬНЫЕ */
+/* КНОПКИ - ЭКСТРЕМАЛЬНО КОМПАКТНЫЕ */
 /* ============================================================ */
 .stock-button {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  min-width: 42px !important;
-  max-width: 60px !important;
+  min-width: 40px !important;
+  max-width: 58px !important;
   width: 100% !important;
-  padding: 0.3rem 0.25rem !important;
-  font-size: 0.65rem !important;
+  padding: 0.25rem 0.15rem !important;
+  font-size: 0.62rem !important;
   font-weight: 500;
   line-height: 1.1 !important;
   color: #1f2937;
   background: white;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
   box-sizing: border-box !important;
+  margin: 0 !important;
 }
 
 .stock-button:hover {
@@ -180,10 +197,10 @@
   }
 
   .product-table thead tr {
-    background: #1f2937;
+    background: #1f2937 !important;
   }
 
-  .product-table th {
+  .product-table thead tr th {
     color: #d1d5db;
     border-bottom-color: #374151;
   }
@@ -231,15 +248,16 @@
     padding: 0.75rem 0.5rem !important;
     font-size: 0.875rem !important;
     line-height: normal !important;
+    white-space: nowrap !important;
   }
 
   .product-row td {
-    padding: 0.5rem !important;
+    padding: 0.5rem 0.5rem !important;
     font-size: 0.875rem !important;
   }
 
   .product-row td.col-stock {
-    padding: 0.25rem !important;
+    padding: 0.25rem 0.25rem !important;
   }
 
   .category-row td {
@@ -265,24 +283,21 @@
   .product-table th.col-name {
     width: 40% !important;
     min-width: 150px !important;
-    max-width: none !important;
   }
 
   .product-table th.col-volume {
     width: 10% !important;
     min-width: 70px !important;
-    max-width: none !important;
   }
 
   .product-table th.col-stock {
     width: auto !important;
     min-width: 100px !important;
-    max-width: none !important;
   }
 }
 
 /* ============================================================ */
-/* ОЧЕНЬ МАЛЕНЬКИЕ ЭКРАНЫ (iPhone SE и меньше) */
+/* ОЧЕНЬ МАЛЕНЬКИЕ ЭКРАНЫ (iPhone SE) */
 /* ============================================================ */
 @media (max-width: 380px) {
   .product-table {
@@ -290,28 +305,28 @@
   }
 
   .product-table thead tr th {
-    padding: 0.35rem 0.05rem !important;
-    font-size: 0.6rem !important;
+    padding: 0.25rem 0.03rem !important;
+    font-size: 0.55rem !important;
   }
 
   .product-row td {
-    padding: 0.25rem 0.05rem !important;
-    font-size: 0.65rem !important;
+    padding: 0.2rem 0.03rem !important;
+    font-size: 0.63rem !important;
   }
 
   .product-row td.col-stock {
-    padding: 0.1rem 0.05rem !important;
+    padding: 0.1rem 0.01rem !important;
   }
 
   .stock-button {
-    min-width: 38px !important;
-    max-width: 55px !important;
-    padding: 0.25rem 0.2rem !important;
-    font-size: 0.6rem !important;
+    min-width: 36px !important;
+    max-width: 52px !important;
+    padding: 0.2rem 0.1rem !important;
+    font-size: 0.58rem !important;
   }
 
   .product-table th.col-name {
-    width: 30% !important;
+    width: 33% !important;
   }
 
   .product-table th.col-volume {
@@ -319,6 +334,6 @@
   }
 
   .product-table th.col-stock {
-    width: 20% !important;
+    width: 19% !important;
   }
 }
