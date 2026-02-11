@@ -72,7 +72,7 @@ const HistoryItem = ({ record }) => {
       <div className="history-content">
         <div className="history-header">
           <span className="history-action">{actionInfo.label}</span>
-          <span className="history-date">{formatDate(record.performed_at)}</span>
+          <span className="history-date">{formatDate(record.changed_at)}</span>
         </div>
 
         <div className="history-details">
@@ -95,7 +95,7 @@ const HistoryItem = ({ record }) => {
           {/* Performed By */}
           <div className="detail-item">
             <span className="detail-label">Выполнил:</span>
-            <span className="detail-value">{record.performed_by}</span>
+            <span className="detail-value">{record.changed_by || 'Система'}</span>
           </div>
 
           {/* Specific Details based on Action */}
