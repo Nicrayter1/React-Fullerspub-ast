@@ -1,23 +1,23 @@
 /**
  * ============================================================
- * АДАПТИВНЫЕ СТИЛИ - БЕЗ СКРОЛЛА (ИСПРАВЛЕНО)
+ * УЛЬТРА-КОМПАКТНАЯ ТАБЛИЦА - ВСЁ ПОМЕЩАЕТСЯ
  * ============================================================
  * 
- * Версия: 5.2.0 - КНОПКИ ВИДНЫ
+ * Версия: 7.0.0 - ULTIMATE COMPACT
  * Дата: 2026-02-09
  * 
- * ИСПРАВЛЕНИЯ:
- * ✅ Кнопки видны и работают
- * ✅ Таблица помещается на экран
- * ✅ Нет горизонтального скролла
- * ✅ Font-size >= 16px (без зума)
+ * ТРЕБОВАНИЯ:
+ * ✅ ВСЯ таблица помещается на экран
+ * ✅ ВСЕ колонки видны БЕЗ скролла
+ * ✅ Кнопки видны и активны
+ * ✅ Функционал сохранен
  * 
- * @version 5.2.0
+ * @version 7.0.0
  * ============================================================
  */
 
 /* ============================================================ */
-/* БАЗОВЫЕ СТИЛИ */
+/* КОНТЕЙНЕР */
 /* ============================================================ */
 
 .product-list {
@@ -38,18 +38,19 @@
 }
 
 /* ============================================================ */
-/* ТАБЛИЦА */
+/* ТАБЛИЦА - 100% БЕЗ min-width */
 /* ============================================================ */
 
 .product-table {
   width: 100% !important;
+  max-width: 100% !important;
   border-collapse: collapse;
   table-layout: fixed !important;
   font-size: 0.875rem;
 }
 
 /* ============================================================ */
-/* ЗАГОЛОВКИ */
+/* ЗАГОЛОВКИ - КОМПАКТНЫЕ */
 /* ============================================================ */
 
 .product-table thead tr {
@@ -57,27 +58,28 @@
 }
 
 .product-table th {
-  padding: 0.75rem 0.5rem;
+  padding: 0.5rem 0.25rem;
   text-align: left;
   font-weight: 600;
   color: #374151;
   border-bottom: 2px solid #e5e7eb;
-  font-size: 0.875rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 0.75rem;
+  white-space: normal;
+  line-height: 1.2;
+  word-wrap: break-word;
 }
 
 .product-table th.col-name {
-  width: 40%;
+  width: 30%;
 }
 
 .product-table th.col-volume {
-  width: 10%;
+  width: 8%;
   text-align: center;
 }
 
 .product-table th.col-stock {
-  width: auto;
+  width: 20.66%;
   text-align: center;
 }
 
@@ -86,19 +88,21 @@
 /* ============================================================ */
 
 .category-row td {
-  padding: 0.625rem 0.5rem;
+  padding: 0.5rem 0.25rem;
   background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
+  font-size: 0.75rem;
 }
 
 .category-name {
   font-weight: 600;
   color: #1f2937;
-  margin-right: 0.5rem;
+  margin-right: 0.25rem;
+  font-size: 0.75rem;
 }
 
 .category-count {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   color: #6b7280;
 }
 
@@ -115,9 +119,10 @@
 }
 
 .product-row td {
-  padding: 0.5rem;
+  padding: 0.375rem 0.25rem;
   border-bottom: 1px solid #e5e7eb;
   color: #374151;
+  font-size: 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -125,23 +130,24 @@
 
 .product-row td.col-stock {
   text-align: center;
-  padding: 0.25rem;
-  overflow: visible !important;
+  padding: 0.25rem 0.15rem;
+  overflow: visible;
 }
 
 /* ============================================================ */
-/* КНОПКИ */
+/* КНОПКИ - КОМПАКТНЫЕ НО АКТИВНЫЕ */
 /* ============================================================ */
 
 .stock-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 60px;
-  min-height: 44px;
+  min-width: 45px;
+  max-width: 100%;
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  font-size: 1rem;
+  min-height: 38px;
+  padding: 0.375rem 0.25rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: #1f2937;
   background: white;
@@ -218,110 +224,106 @@
 }
 
 /* ============================================================ */
-/* МОБИЛЬНЫЕ (< 640px) */
+/* МОБИЛЬНЫЕ - УЛЬТРА-КОМПАКТНО */
 /* ============================================================ */
 
 @media (max-width: 640px) {
   .product-table {
-    font-size: 0.75rem;
-  }
-
-  .product-table th {
-    padding: 0.5rem 0.25rem;
-    font-size: 0.75rem;
-    white-space: normal;
-    line-height: 1.2;
-  }
-
-  .product-table th.col-name {
-    width: 35%;
-  }
-
-  .product-table th.col-volume {
-    width: 10%;
-  }
-
-  .product-table th.col-stock {
-    width: 18.33%;
-  }
-
-  .product-row td {
-    padding: 0.375rem 0.25rem;
-    font-size: 0.75rem;
-  }
-
-  .product-row td.col-stock {
-    padding: 0.25rem 0.15rem;
-  }
-
-  .category-row td {
-    padding: 0.5rem 0.25rem;
-  }
-
-  .category-name {
-    font-size: 0.8125rem;
-  }
-
-  .category-count {
     font-size: 0.6875rem;
   }
 
-  /* Кнопки - >= 44px высота, font-size 16px */
-  .stock-button {
-    min-width: 50px;
-    max-width: 70px;
-    min-height: 44px;
-    padding: 0.5rem 0.5rem;
-    font-size: 16px !important;
-  }
-}
-
-/* ============================================================ */
-/* ОЧЕНЬ МАЛЕНЬКИЕ ЭКРАНЫ (< 400px) */
-/* ============================================================ */
-
-@media (max-width: 400px) {
-  .product-table {
-    font-size: 0.7rem;
-  }
-
   .product-table th {
-    padding: 0.4rem 0.2rem;
-    font-size: 0.7rem;
+    padding: 0.375rem 0.15rem;
+    font-size: 0.6875rem;
+  }
+
+  .product-table th.col-name {
+    width: 28%;
+  }
+
+  .product-table th.col-volume {
+    width: 8%;
+  }
+
+  .product-table th.col-stock {
+    width: 21.33%;
   }
 
   .product-row td {
-    padding: 0.3rem 0.2rem;
-    font-size: 0.7rem;
+    padding: 0.3rem 0.15rem;
+    font-size: 0.6875rem;
   }
 
   .product-row td.col-stock {
     padding: 0.2rem 0.1rem;
   }
 
+  .category-row td {
+    padding: 0.375rem 0.15rem;
+  }
+
+  .category-name {
+    font-size: 0.6875rem;
+  }
+
+  .category-count {
+    font-size: 0.625rem;
+  }
+
   .stock-button {
-    min-width: 45px;
-    max-width: 65px;
-    min-height: 44px;
-    padding: 0.5rem 0.4rem;
-    font-size: 16px !important;
-  }
-
-  .product-table th.col-name {
-    width: 33%;
-  }
-
-  .product-table th.col-volume {
-    width: 10%;
-  }
-
-  .product-table th.col-stock {
-    width: 19%;
+    min-width: 40px;
+    max-width: 100%;
+    min-height: 36px;
+    padding: 0.3rem 0.2rem;
+    font-size: 0.8125rem;
   }
 }
 
 /* ============================================================ */
-/* ПЛАНШЕТЫ (641px - 1024px) */
+/* ОЧЕНЬ МАЛЕНЬКИЕ ЭКРАНЫ */
+/* ============================================================ */
+
+@media (max-width: 400px) {
+  .product-table {
+    font-size: 0.625rem;
+  }
+
+  .product-table th {
+    padding: 0.3rem 0.1rem;
+    font-size: 0.625rem;
+  }
+
+  .product-table th.col-name {
+    width: 26%;
+  }
+
+  .product-table th.col-volume {
+    width: 8%;
+  }
+
+  .product-table th.col-stock {
+    width: 22%;
+  }
+
+  .product-row td {
+    padding: 0.25rem 0.1rem;
+    font-size: 0.625rem;
+  }
+
+  .product-row td.col-stock {
+    padding: 0.15rem 0.05rem;
+  }
+
+  .stock-button {
+    min-width: 36px;
+    min-height: 34px;
+    padding: 0.25rem 0.15rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* ============================================================ */
+/* ПЛАНШЕТЫ */
 /* ============================================================ */
 
 @media (min-width: 641px) and (max-width: 1024px) {
@@ -338,8 +340,49 @@
   }
 
   .stock-button {
-    min-width: 56px;
+    min-width: 50px;
+    min-height: 40px;
+    font-size: 0.875rem;
+  }
+}
+
+/* ============================================================ */
+/* ДЕСКТОП */
+/* ============================================================ */
+
+@media (min-width: 1025px) {
+  .product-table {
+    font-size: 0.875rem;
+  }
+
+  .product-table th {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .product-table th.col-name {
+    width: 40%;
+  }
+
+  .product-table th.col-volume {
+    width: 10%;
+  }
+
+  .product-table th.col-stock {
+    width: auto;
+  }
+
+  .product-row td {
+    padding: 0.5rem;
+  }
+
+  .product-row td.col-stock {
+    padding: 0.25rem;
+  }
+
+  .stock-button {
+    min-width: 60px;
     min-height: 44px;
-    font-size: 16px !important;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
   }
 }
