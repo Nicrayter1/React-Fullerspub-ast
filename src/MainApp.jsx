@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Plus, Save, Upload, Download, RefreshCw, LogOut, User, Settings } from 'lucide-react'
+import { Save, Upload, Download, RefreshCw, LogOut, User, Settings } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import { useNavigate } from 'react-router-dom'
 
@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom'
 import Notification from './components/Notification'
 import SearchInput from './components/SearchInput'
 import NumberEditModal from './components/NumberEditModal'
-import AddModal from './components/AddModal'
 import ProductList from './ProductList'
 
 // Импорт утилит
@@ -46,10 +45,6 @@ function MainApp() {
     product: null,
     field: '',
     title: ''
-  })
-  const [addModal, setAddModal] = useState({
-    isOpen: false,
-    type: 'product'
   })
 
   // Доступные колонки для текущего пользователя
@@ -670,23 +665,7 @@ const saveToSupabase = useCallback(async () => {
             ))}
           </div>
 
-          {/* Кнопки действий */}
-          {userProfile?.role === 'manager' && (
-            <div className="action-buttons">
-              <button
-                onClick={() => setAddModal({ isOpen: true, type: 'product' })}
-                className="action-btn add-product"
-              >
-                <Plus className="btn-icon" /> Добавить продукт
-              </button>
-              <button
-                onClick={() => setAddModal({ isOpen: true, type: 'category' })}
-                className="action-btn add-category"
-              >
-                <Plus className="btn-icon" /> Добавить категорию
-              </button>
-            </div>
-          )}
+          {/* Кнопки действий удалены - перенесены в админ-панель */}
 
           <div className="action-buttons">
             <button
@@ -740,14 +719,6 @@ const saveToSupabase = useCallback(async () => {
         value={editModal.product?.[editModal.field]}
         onClose={() => setEditModal({ isOpen: false, product: null, field: '', title: '' })}
         onConfirm={handleConfirmEdit}
-      />
-
-      <AddModal
-        isOpen={addModal.isOpen}
-        type={addModal.type}
-        categories={categories}
-        onClose={() => setAddModal({ isOpen: false, type: 'product' })}
-        onAdd={handleAddItem}
       />
     </div>
   )
