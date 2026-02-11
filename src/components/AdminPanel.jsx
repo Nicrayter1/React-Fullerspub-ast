@@ -239,7 +239,10 @@ const AdminPanel = () => {
         // Добавление категории
         console.log('➕ Добавление категории:', name)
         
-        const newCategory = await supabaseAPI.addCategory(name)
+        const newCategory = await supabaseAPI.insertCategory({
+          name: name,
+          order_index: categories.length + 1
+        })
         
         if (newCategory) {
           showNotification(`Категория "${name}" успешно добавлена!`, 'success')
@@ -253,13 +256,14 @@ const AdminPanel = () => {
         // Добавление продукта
         console.log('➕ Добавление продукта:', { category, name, volume })
         
-        const newProduct = await supabaseAPI.addProduct({
+        const newProduct = await supabaseAPI.insertProduct({
           category_id: category,
           name,
           volume,
-          bar1_stock: 0,
-          bar2_stock: 0,
-          cold_room_stock: 0
+          bar1: 0,
+          bar2: 0,
+          cold_room: 0,
+          order_index: products.length + 1
         })
         
         if (newProduct) {
