@@ -65,24 +65,6 @@ export async function logProductAction(productId, action, performedBy, metadata 
     return { success: false, error: error.message }
   }
 }
-      }])
-      .select()
-      .single()
-
-    if (error) {
-      console.error('❌ Ошибка логирования:', error)
-      // Не выбрасываем ошибку, чтобы не блокировать основное действие
-      return { success: false, error: error.message }
-    }
-
-    console.log('✅ Действие залогировано')
-    return { success: true, data }
-
-  } catch (error) {
-    console.error('❌ Критическая ошибка логирования:', error)
-    return { success: false, error: error.message }
-  }
-}
 
 /**
  * ============================================================
