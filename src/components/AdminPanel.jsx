@@ -436,7 +436,7 @@ const AdminPanel = () => {
                   onChange={(e) => {
                     const catId = e.target.value
                     setSelectedCategory(
-                      catId ? categories.find(c => c.id === catId) : null
+                      catId ? categories.find(c => c.id === parseInt(catId)) : null
                     )
                   }}
                   className="select-category"
