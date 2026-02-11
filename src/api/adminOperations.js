@@ -45,9 +45,26 @@ export async function logProductAction(productId, action, performedBy, metadata 
       .insert([{
         product_id: productId,
         action: action,
-        performed_by: performedBy,
-        performed_at: new Date().toISOString(),
-        metadata: metadata
+        changed_by: performedBy,           // changed_by вместо performed_by
+        changed_at: new Date().toISOString(), // changed_at вместо performed_at
+        old_value: metadata.old_value || null,  // Используем old_value
+        new_value: metadata.new_value || null   // Используем new_value
+      }])
+      .select()
+
+    if (error) {
+      console.error('❌ Ошибка логирования:', error)
+      throw error
+    }
+
+    console.log('✅ Действие залогировано:', data)
+    return { success: true, data: data[0] }
+
+  } catch (error) {
+    console.error('❌ Критическая ошибка логирования:', error)
+    return { success: false, error: error.message }
+  }
+}
       }])
       .select()
       .single()
@@ -494,7 +511,7 @@ export async function getAllHistory(filters = {}) {
     let query = supabaseClient
       .from('product_freeze_history')
       .select('*')
-      .order('performed_at', { ascending: false })
+      .order('changed_at', { ascending: false })  // changed_at вместо performed_at
       .limit(limit)
 
     // Применяем фильтры
@@ -503,15 +520,15 @@ export async function getAllHistory(filters = {}) {
     }
 
     if (performedBy) {
-      query = query.eq('performed_by', performedBy)
+      query = query.eq('changed_by', performedBy)  // changed_by вместо performed_by
     }
 
     if (fromDate) {
-      query = query.gte('performed_at', fromDate.toISOString())
+      query = query.gte('changed_at', fromDate.toISOString())  // changed_at
     }
 
     if (toDate) {
-      query = query.lte('performed_at', toDate.toISOString())
+      query = query.lte('changed_at', toDate.toISOString())  // changed_at
     }
 
     const { data, error } = await query
