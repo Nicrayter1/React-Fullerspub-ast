@@ -33,6 +33,7 @@ import {
 import AdminProductList from './AdminProductList'
 import AdminHistoryView from './AdminHistoryView'
 import Notification from './Notification'
+import AddModal from './AddModal'
 import './AdminPanel.css'
 
 /**
@@ -62,6 +63,12 @@ const AdminPanel = () => {
   // Фильтры
   const [showFrozen, setShowFrozen] = useState(true)
   const [showActive, setShowActive] = useState(true)
+
+  // Модальное окно добавления
+  const [addModal, setAddModal] = useState({
+    isOpen: false,
+    type: 'product' // 'product' | 'category'
+  })
 
   // ============================================================
   // ПРОВЕРКА ДОСТУПА
@@ -220,6 +227,53 @@ const AdminPanel = () => {
     } catch (error) {
       console.error('❌ Ошибка разморозки:', error)
       showNotification('Ошибка разморозки продукта', 'error')
+    }
+  }
+
+  /**
+   * Добавить новый продукт или категорию
+   */
+  const handleAddItem = async ({ category, name, volume }) => {
+    try {
+      if (addModal.type === 'category') {
+        // Добавление категории
+        console.log('➕ Добавление категории:', name)
+        
+        const newCategory = await supabaseAPI.addCategory(name)
+        
+        if (newCategory) {
+          showNotification(`Категория "${name}" успешно добавлена!`, 'success')
+          setCategories(prev => [...prev, newCategory])
+          setAddModal({ isOpen: false, type: 'product' })
+        } else {
+          showNotification('Ошибка добавления категории', 'error')
+        }
+        
+      } else {
+        // Добавление продукта
+        console.log('➕ Добавление продукта:', { category, name, volume })
+        
+        const newProduct = await supabaseAPI.addProduct({
+          category_id: category,
+          name,
+          volume,
+          bar1_stock: 0,
+          bar2_stock: 0,
+          cold_room_stock: 0
+        })
+        
+        if (newProduct) {
+          showNotification(`Продукт "${name}" успешно добавлен!`, 'success')
+          setProducts(prev => [...prev, newProduct])
+          setAddModal({ isOpen: false, type: 'product' })
+        } else {
+          showNotification('Ошибка добавления продукта', 'error')
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Ошибка добавления:', error)
+      showNotification('Ошибка добавления: ' + error.message, 'error')
     }
   }
 
@@ -433,6 +487,25 @@ const AdminPanel = () => {
                   🔄 Обновить
                 </button>
               </div>
+
+              {/* Кнопки добавления */}
+              <div className="control-group">
+                <button
+                  onClick={() => setAddModal({ isOpen: true, type: 'product' })}
+                  className="btn-add-product"
+                >
+                  ➕ Добавить продукт
+                </button>
+              </div>
+
+              <div className="control-group">
+                <button
+                  onClick={() => setAddModal({ isOpen: true, type: 'category' })}
+                  className="btn-add-category"
+                >
+                  ➕ Добавить категорию
+                </button>
+              </div>
             </div>
 
             {/* PRODUCTS LIST */}
@@ -470,6 +543,15 @@ const AdminPanel = () => {
           onClose={() => setNotification(null)}
         />
       )}
+
+      {/* ADD MODAL */}
+      <AddModal
+        isOpen={addModal.isOpen}
+        type={addModal.type}
+        categories={categories}
+        onClose={() => setAddModal({ isOpen: false, type: 'product' })}
+        onAdd={handleAddItem}
+      />
     </div>
   )
 }
