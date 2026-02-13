@@ -2,6 +2,7 @@
  * ============================================================
  * СТИЛИ ДЛЯ АДМИН-ПАНЕЛИ
  * ТЕМНАЯ ТЕМА как в основном приложении
+ * + СТИЛИ ДЛЯ СИСТЕМЫ ФЛАГОВ И СЦЕНАРИЕВ
  * ============================================================
  */
 
@@ -117,6 +118,173 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   min-height: 600px;
   border: 1px solid #374151;
+}
+
+/* ============================================================
+   НОВОЕ: СЕКЦИЯ СЦЕНАРИЕВ
+   ============================================================ */
+
+.scenarios-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #111827;
+  border-radius: 12px;
+  border: 2px solid #374151;
+}
+
+.scenarios-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+/* Активный сценарий баннер */
+.active-scenario-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.active-scenario-banner .scenario-icon {
+  font-size: 32px;
+}
+
+.active-scenario-banner .scenario-info {
+  flex: 1;
+}
+
+.scenario-name {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.scenario-stats {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.btn-stop-scenario {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-stop-scenario:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Сетка сценариев */
+.scenarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+/* Карточка сценария */
+.scenario-card {
+  background: #1f2937;
+  border: 2px solid #374151;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.scenario-card:hover {
+  border-color: #4b5563;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.scenario-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.scenario-icon-large {
+  font-size: 36px;
+}
+
+.scenario-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #e5e7eb;
+}
+
+.scenario-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.scenario-count {
+  font-size: 28px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-bottom: 12px;
+}
+
+/* Кнопка запуска сценария */
+.btn-run-scenario {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+}
+
+.scenario-red {
+  background: #ef4444;
+}
+
+.scenario-red:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.scenario-green {
+  background: #10b981;
+}
+
+.scenario-green:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.scenario-yellow {
+  background: #f59e0b;
+}
+
+.scenario-yellow:hover:not(:disabled) {
+  background: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.btn-run-scenario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ============================================================
@@ -386,5 +554,14 @@
 
   .checkbox-group {
     flex-direction: column;
+  }
+
+  .scenarios-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .active-scenario-banner {
+    flex-direction: column;
+    text-align: center;
   }
 }
