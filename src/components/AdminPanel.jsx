@@ -13,10 +13,11 @@
  * - Просмотр истории действий
  * - Фильтрация по категориям
  * - Поиск продуктов
+ * - НОВОЕ: Система флагов и сценариев
  * 
- * @version 1.0.0
+ * @version 2.0.0
  * @author Admin Team
- * @date 2026-02-05
+ * @date 2026-02-12
  * ============================================================
  */
 
@@ -30,10 +31,18 @@ import {
   deleteProduct,
   updateProductsOrder
 } from '../api/adminOperations'
+import {
+  runScenario,
+  stopAllScenarios,
+  getFlagsStatistics,
+  updateProductFlags,
+  SCENARIO_TYPES
+} from '../api/scenarios'
 import AdminProductList from './AdminProductList'
 import AdminHistoryView from './AdminHistoryView'
 import Notification from './Notification'
 import AddModal from './AddModal'
+import FlagModal from './FlagModal'
 import './AdminPanel.css'
 
 /**
@@ -71,6 +80,27 @@ const AdminPanel = () => {
   })
 
   // ============================================================
+  // НОВОЕ: STATE ДЛЯ СИСТЕМЫ ФЛАГОВ
+  // ============================================================
+
+  // Модальное окно флагов
+  const [flagModal, setFlagModal] = useState({
+    isOpen: false,
+    product: null,
+    flags: {
+      red: false,
+      green: false,
+      yellow: false
+    }
+  })
+
+  // Статистика флагов
+  const [flagsStats, setFlagsStats] = useState(null)
+
+  // Активный сценарий
+  const [activeScenario, setActiveScenario] = useState(null)
+
+  // ============================================================
   // ПРОВЕРКА ДОСТУПА
   // ============================================================
   
@@ -95,14 +125,19 @@ const AdminPanel = () => {
       setLoading(true)
       console.log('📦 Загрузка данных для админ-панели...')
 
-      // Параллельная загрузка категорий и продуктов
-      const [categoriesData, productsData] = await Promise.all([
+      // Параллельная загрузка категорий, продуктов и статистики
+      const [categoriesData, productsData, statsResult] = await Promise.all([
         supabaseAPI.fetchCategories(),
-        supabaseAPI.fetchProducts()
+        supabaseAPI.fetchProducts(),
+        getFlagsStatistics()
       ])
 
       setCategories(categoriesData)
       setProducts(productsData)
+      
+      if (statsResult.success) {
+        setFlagsStats(statsResult.stats)
+      }
       
       console.log(`✅ Загружено: ${categoriesData.length} категорий, ${productsData.length} продуктов`)
 
@@ -162,7 +197,7 @@ const AdminPanel = () => {
   }
 
   // ============================================================
-  // ОБРАБОТЧИКИ СОБЫТИЙ
+  // ОБРАБОТЧИКИ СОБЫТИЙ - ЗАМОРОЗКА/УДАЛЕНИЕ
   // ============================================================
   
   /**
@@ -231,6 +266,57 @@ const AdminPanel = () => {
   }
 
   /**
+   * Удалить продукт
+   */
+  const handleDeleteProduct = async (productId, productName) => {
+    const confirmed = window.confirm(
+      `Вы уверены, что хотите удалить "${productName}"?\n\nЭто действие нельзя отменить.`
+    )
+
+    if (!confirmed) return
+
+    try {
+      console.log(`🗑️ Удаление продукта ${productId}`)
+      
+      const result = await deleteProduct(productId, productName, userProfile.email)
+
+      if (result.success) {
+        showNotification(`Продукт "${productName}" удален`, 'success')
+        // Убираем из локального состояния
+        setProducts(prev => prev.filter(p => p.id !== productId))
+      } else {
+        showNotification(result.error || 'Ошибка удаления', 'error')
+      }
+
+    } catch (error) {
+      console.error('❌ Ошибка удаления:', error)
+      showNotification('Ошибка удаления продукта', 'error')
+    }
+  }
+
+  /**
+   * Изменить порядок продуктов (drag & drop)
+   */
+  const handleReorderProducts = async (reorderedProducts) => {
+    try {
+      console.log('🔄 Изменение порядка продуктов')
+
+      const result = await updateProductsOrder(reorderedProducts, userProfile.email)
+
+      if (result.success) {
+        setProducts(reorderedProducts)
+        showNotification('Порядок продуктов обновлен', 'success')
+      } else {
+        showNotification('Ошибка изменения порядка', 'error')
+      }
+
+    } catch (error) {
+      console.error('❌ Ошибка изменения порядка:', error)
+      showNotification('Ошибка изменения порядка', 'error')
+    }
+  }
+
+  /**
    * Добавить новый продукт или категорию
    */
   const handleAddItem = async ({ category, name, volume }) => {
@@ -281,91 +367,145 @@ const AdminPanel = () => {
     }
   }
 
+  // ============================================================
+  // НОВОЕ: ОБРАБОТЧИКИ ФЛАГОВ
+  // ============================================================
+
   /**
-   * Удалить продукт
+   * Открыть модальное окно выбора флагов
    */
-  const handleDeleteProduct = async (productId, productName) => {
-    // Подтверждение удаления
-    const confirmed = window.confirm(
-      `Вы уверены, что хотите удалить продукт "${productName}"?\n\nЭто действие необратимо!`
-    )
-
-    if (!confirmed) {
-      return
-    }
-
-    try {
-      console.log(`🗑️ Удаление продукта ${productId}`)
-      
-      const result = await deleteProduct(productId, userProfile.email)
-
-      if (result.success) {
-        showNotification(result.message, 'success')
-        // Удаляем из локального состояния
-        setProducts(prev => prev.filter(p => p.id !== productId))
-      } else {
-        showNotification(result.error || 'Ошибка удаления', 'error')
+  const handleOpenFlagModal = (product) => {
+    setFlagModal({
+      isOpen: true,
+      product: product,
+      flags: {
+        red: product.red_flag || false,
+        green: product.green_flag || false,
+        yellow: product.yellow_flag || false
       }
-
-    } catch (error) {
-      console.error('❌ Ошибка удаления:', error)
-      showNotification('Ошибка удаления продукта', 'error')
-    }
+    })
   }
 
   /**
-   * Изменить порядок продуктов (drag & drop)
+   * Сохранить флаги продукта
    */
-  const handleReorderProducts = async (reorderedProducts) => {
+  const handleSaveFlags = async () => {
     try {
-      console.log(`🔄 Изменение порядка ${reorderedProducts.length} продуктов`)
-
-      // Подготавливаем данные для обновления
-      const updates = reorderedProducts.map((product, index) => ({
-        id: product.id,
-        order_index: index + 1
-      }))
-
-      const result = await updateProductsOrder(
-        updates,
-        userProfile.email,
-        selectedCategory?.id
+      const result = await updateProductFlags(
+        flagModal.product.id,
+        flagModal.flags
       )
-
+      
       if (result.success) {
-        showNotification('Порядок продуктов обновлен', 'success')
-        // Обновляем локальное состояние
-        setProducts(prev => {
-          const updated = [...prev]
-          reorderedProducts.forEach((product, index) => {
-            const idx = updated.findIndex(p => p.id === product.id)
-            if (idx !== -1) {
-              updated[idx] = { ...updated[idx], order_index: index + 1 }
-            }
-          })
-          return updated
-        })
+        showNotification('Флаги сохранены', 'success')
+        
+        // Обновить продукт в списке
+        setProducts(prev => prev.map(p => 
+          p.id === flagModal.product.id
+            ? {
+                ...p,
+                red_flag: flagModal.flags.red,
+                green_flag: flagModal.flags.green,
+                yellow_flag: flagModal.flags.yellow
+              }
+            : p
+        ))
+        
+        // Закрыть модалку
+        setFlagModal({ isOpen: false, product: null, flags: {} })
+        
+        // Обновить статистику
+        const statsResult = await getFlagsStatistics()
+        if (statsResult.success) {
+          setFlagsStats(statsResult.stats)
+        }
       } else {
-        showNotification(result.message || 'Ошибка обновления порядка', 'warning')
+        showNotification('Ошибка сохранения флагов', 'error')
       }
-
     } catch (error) {
-      console.error('❌ Ошибка изменения порядка:', error)
-      showNotification('Ошибка изменения порядка', 'error')
+      console.error('Ошибка:', error)
+      showNotification('Ошибка сохранения флагов', 'error')
     }
   }
 
   // ============================================================
-  // RENDER
+  // НОВОЕ: ОБРАБОТЧИКИ СЦЕНАРИЕВ
+  // ============================================================
+
+  /**
+   * Запустить сценарий
+   */
+  const handleRunScenario = async (scenarioType) => {
+    const scenario = Object.values(SCENARIO_TYPES).find(s => s.id === scenarioType)
+    
+    const confirmed = window.confirm(
+      `Запустить сценарий "${scenario.name}"?\n\n` +
+      `Это заморозит все позиции БЕЗ ${scenario.icon} флага.`
+    )
+    
+    if (!confirmed) return
+    
+    setLoading(true)
+    
+    const result = await runScenario(
+      scenarioType,
+      userProfile.email
+    )
+    
+    if (result.success) {
+      showNotification(result.message, 'success')
+      setActiveScenario(scenarioType)
+      await loadData() // Перезагрузить продукты и статистику
+    } else {
+      showNotification('Ошибка запуска сценария: ' + result.error, 'error')
+    }
+    
+    setLoading(false)
+  }
+
+  /**
+   * Остановить все сценарии
+   */
+  const handleStopScenarios = async () => {
+    const confirmed = window.confirm(
+      'Остановить все сценарии?\n\n' +
+      'Все продукты будут разморожены.'
+    )
+    
+    if (!confirmed) return
+    
+    setLoading(true)
+    
+    const result = await stopAllScenarios()
+    
+    if (result.success) {
+      showNotification(result.message, 'success')
+      setActiveScenario(null)
+      await loadData()
+    } else {
+      showNotification('Ошибка остановки сценариев: ' + result.error, 'error')
+    }
+    
+    setLoading(false)
+  }
+
+  // ============================================================
+  // ОТФИЛЬТРОВАННЫЕ ДАННЫЕ
   // ============================================================
   
-  // Проверка доступа
-  if (!userProfile || userProfile.role !== 'manager') {
+  const filteredProducts = getFilteredProducts()
+
+  // ============================================================
+  // СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБОК
+  // ============================================================
+  
+  // Если роль не manager - показываем access denied
+  if (userProfile && userProfile.role !== 'manager') {
     return (
       <div className="admin-panel-access-denied">
         <div className="access-denied-card">
-          <h2>🔒 Доступ запрещен</h2>
-          <p>Эта страница доступна только для менеджеров</p>
+          <h2>🚫 Доступ запрещен</h2>
+          <p>Эта страница доступна только менеджерам.</p>
           <button onClick={() => navigate('/')} className="btn-primary">
             Вернуться на главную
           </button>
@@ -374,7 +514,7 @@ const AdminPanel = () => {
     )
   }
 
-  // Экран загрузки
+  // Показываем загрузку
   if (loading) {
     return (
       <div className="admin-panel-loading">
@@ -384,16 +524,20 @@ const AdminPanel = () => {
     )
   }
 
-  const filteredProducts = getFilteredProducts()
-
+  // ============================================================
+  // РЕНДЕР КОМПОНЕНТА
+  // ============================================================
+  
   return (
     <div className="admin-panel">
       {/* HEADER */}
       <header className="admin-panel-header">
         <div className="header-content">
           <div className="header-left">
-            <h1>⚙️ Админ-панель</h1>
-            <p className="header-subtitle">Управление продуктами</p>
+            <h1>🎛️ Админ-панель</h1>
+            <p className="header-subtitle">
+              Управление продуктами и сценариями
+            </p>
           </div>
           <div className="header-right">
             <button
@@ -426,6 +570,105 @@ const AdminPanel = () => {
       <div className="admin-panel-content">
         {activeTab === 'products' && (
           <div className="products-view">
+            
+            {/* НОВОЕ: СЕКЦИЯ СЦЕНАРИЕВ */}
+            <div className="scenarios-section">
+              <h3>⚡ Сценарии</h3>
+              
+              {/* Активный сценарий */}
+              {activeScenario && (
+                <div className="active-scenario-banner">
+                  <span className="scenario-icon">
+                    {Object.values(SCENARIO_TYPES).find(s => s.id === activeScenario)?.icon}
+                  </span>
+                  <div className="scenario-info">
+                    <div className="scenario-name">
+                      Активен: {Object.values(SCENARIO_TYPES).find(s => s.id === activeScenario)?.name}
+                    </div>
+                    <div className="scenario-stats">
+                      Активных позиций: {
+                        activeScenario === 'stocks' ? flagsStats?.red :
+                        activeScenario === 'revision' ? flagsStats?.green :
+                        flagsStats?.yellow
+                      }
+                    </div>
+                  </div>
+                  <button 
+                    className="btn-stop-scenario"
+                    onClick={handleStopScenarios}
+                  >
+                    ⏹️ Остановить
+                  </button>
+                </div>
+              )}
+              
+              {/* Кнопки запуска */}
+              <div className="scenarios-grid">
+                {/* СТОКИ */}
+                <div className="scenario-card">
+                  <div className="scenario-header">
+                    <span className="scenario-icon-large">🔴</span>
+                    <div>
+                      <div className="scenario-title">Стоки</div>
+                      <div className="scenario-subtitle">Еженедельный учет</div>
+                    </div>
+                  </div>
+                  <div className="scenario-count">
+                    {flagsStats?.red || 0} позиций
+                  </div>
+                  <button
+                    className="btn-run-scenario scenario-red"
+                    onClick={() => handleRunScenario('stocks')}
+                    disabled={activeScenario === 'stocks'}
+                  >
+                    {activeScenario === 'stocks' ? '✓ Активен' : '▶ Запустить'}
+                  </button>
+                </div>
+                
+                {/* РЕВИЗИЯ */}
+                <div className="scenario-card">
+                  <div className="scenario-header">
+                    <span className="scenario-icon-large">🟢</span>
+                    <div>
+                      <div className="scenario-title">Ревизия</div>
+                      <div className="scenario-subtitle">Полная инвентаризация</div>
+                    </div>
+                  </div>
+                  <div className="scenario-count">
+                    {flagsStats?.green || 0} позиций
+                  </div>
+                  <button
+                    className="btn-run-scenario scenario-green"
+                    onClick={() => handleRunScenario('revision')}
+                    disabled={activeScenario === 'revision'}
+                  >
+                    {activeScenario === 'revision' ? '✓ Активен' : '▶ Запустить'}
+                  </button>
+                </div>
+                
+                {/* ДОЛГАЯ ЗАМОРОЗКА */}
+                <div className="scenario-card">
+                  <div className="scenario-header">
+                    <span className="scenario-icon-large">🟡</span>
+                    <div>
+                      <div className="scenario-title">Долгая заморозка</div>
+                      <div className="scenario-subtitle">Архив/сезонные</div>
+                    </div>
+                  </div>
+                  <div className="scenario-count">
+                    {flagsStats?.yellow || 0} позиций
+                  </div>
+                  <button
+                    className="btn-run-scenario scenario-yellow"
+                    onClick={() => handleRunScenario('long_freeze')}
+                    disabled={activeScenario === 'long_freeze'}
+                  >
+                    {activeScenario === 'long_freeze' ? '✓ Активен' : '▶ Запустить'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* FILTERS AND SEARCH */}
             <div className="admin-panel-controls">
               {/* Категории */}
@@ -520,6 +763,7 @@ const AdminPanel = () => {
               onUnfreeze={handleUnfreezeProduct}
               onDelete={handleDeleteProduct}
               onReorder={handleReorderProducts}
+              onOpenFlagModal={handleOpenFlagModal}
             />
 
             {/* EMPTY STATE */}
@@ -555,6 +799,16 @@ const AdminPanel = () => {
         categories={categories}
         onClose={() => setAddModal({ isOpen: false, type: 'product' })}
         onAdd={handleAddItem}
+      />
+
+      {/* НОВОЕ: FLAG MODAL */}
+      <FlagModal
+        isOpen={flagModal.isOpen}
+        product={flagModal.product}
+        flags={flagModal.flags}
+        onFlagsChange={(newFlags) => setFlagModal(prev => ({ ...prev, flags: newFlags }))}
+        onSave={handleSaveFlags}
+        onClose={() => setFlagModal({ isOpen: false, product: null, flags: {} })}
       />
     </div>
   )
