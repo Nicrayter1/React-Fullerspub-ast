@@ -39,7 +39,6 @@ import {
   SCENARIO_TYPES
 } from '../api/scenarios'
 import AdminProductList from './AdminProductList'
-import AdminHistoryView from './AdminHistoryView'
 import Notification from './Notification'
 import AddModal from './AddModal'
 import FlagModal from './FlagModal'
@@ -558,12 +557,6 @@ const AdminPanel = () => {
         >
           📦 Продукты
         </button>
-        <button
-          className={`tab ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          📜 История
-        </button>
       </div>
 
       {/* MAIN CONTENT */}
@@ -776,10 +769,6 @@ const AdminPanel = () => {
               </div>
             )}
           </div>
-        )}
-
-        {activeTab === 'history' && (
-          <AdminHistoryView />
         )}
       </div>
 
