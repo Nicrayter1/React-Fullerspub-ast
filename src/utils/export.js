@@ -3,15 +3,16 @@
  * ЭКСПОРТ ДАННЫХ В CSV
  * ============================================================
  * 
- * ВЕРСИЯ 3.1 - ИСПРАВЛЕН ФИЛЬТР ЗАМОРОЖЕННЫХ
+ * ВЕРСИЯ 4.0 - ФИНАЛЬНАЯ
  * 
- * ИСПРАВЛЕНИЯ:
- * 1. ✅ Правильное округление ИТОГО (без 0.0000001)
- * 2. ✅ Строгий порядок как в базе (category → product)
- * 3. ✅ Дробные числа через формулу ="число"
- * 4. ✅ ФИЛЬТР ЗАМОРОЖЕННЫХ - НЕ экспортируются is_frozen = true
+ * ИЗМЕНЕНИЯ:
+ * 1. ✅ Убрана колонка "Тара мл"
+ * 2. ✅ Правильная сортировка СТРОГО внутри категории
+ * 3. ✅ Округление ИТОГО (без 0.0000001)
+ * 4. ✅ Фильтр замороженных
+ * 5. ✅ Дробные числа через формулу ="число"
  * 
- * @version 3.1.0
+ * @version 4.0.0
  * @date 2026-02-14
  * @author Claude
  * ============================================================
@@ -19,9 +20,6 @@
 
 /**
  * Форматирование числа для CSV экспорта
- * 
- * @param {number} value - Числовое значение
- * @returns {string} Отформатированное значение для CSV
  */
 function formatNumberForCSV(value) {
   if (value === null || value === undefined || value === '') {
@@ -34,42 +32,44 @@ function formatNumberForCSV(value) {
     return '0'
   }
   
-  // КРИТИЧНО: Округляем до 2 знаков
+  // Округляем до 2 знаков
   const rounded = Math.round(numValue * 100) / 100
   
-  // Если целое число → возвращаем как есть
+  // Если целое число
   if (Number.isInteger(rounded)) {
     return rounded.toString()
   }
   
-  // Если дробное → оборачиваем в формулу Excel
-  const formatted = rounded.toString()
-  
-  return `="${formatted}"`
+  // Если дробное → формула Excel
+  return `="${rounded.toString()}"`
 }
 
 /**
- * Сортировка продуктов в правильном порядке
+ * Сортировка продуктов СТРОГО по категориям
  * 
- * @param {Array<Object>} products - Массив продуктов
- * @param {Array<Object>} categories - Массив категорий
- * @returns {Array<Object>} Отсортированный массив
+ * КРИТИЧНО: Сортировка ТОЛЬКО внутри категории!
+ * Категория 11 (soft drinks) со всеми продуктами (включая San Pelegrino)
+ * должна идти вместе, независимо от order_index
  */
 function sortProductsCorrectly(products, categories) {
+  // Map категорий для быстрого поиска
   const categoryOrderMap = new Map(
     categories.map(cat => [cat.id, cat.order_index || 999])
   )
   
   return products.slice().sort((a, b) => {
+    // Получаем order_index категорий
     const catOrderA = categoryOrderMap.get(a.category_id) || 999
     const catOrderB = categoryOrderMap.get(b.category_id) || 999
     
-    // Сортировка по категории
+    // ПЕРВЫЙ уровень: сортировка по категории
     if (catOrderA !== catOrderB) {
       return catOrderA - catOrderB
     }
     
-    // Внутри категории по order_index продукта
+    // ВТОРОЙ уровень: внутри ОДНОЙ категории по order_index продукта
+    // ВАЖНО: Это сработает ТОЛЬКО если catOrderA === catOrderB
+    // То есть продукты из одной категории
     const orderA = a.order_index || 999
     const orderB = b.order_index || 999
     
@@ -86,12 +86,8 @@ function sortProductsCorrectly(products, categories) {
 /**
  * Экспорт продуктов в CSV файл
  * 
- * КРИТИЧНО: Замороженные продукты (is_frozen = true) НЕ экспортируются!
- * 
- * @param {Array<Object>} products - Массив продуктов для экспорта
- * @param {Array<Object>} categories - Массив категорий
- * @param {string} filename - Имя файла (без расширения)
- * @returns {Object} Результат экспорта
+ * ФОРМАТ (БЕЗ колонки Тара):
+ * Наименование;Бар 1 (Факт);Бар 2 (Факт);Холод. комната (Факт);ИТОГО
  */
 export function exportToCSV(products, categories = [], filename = 'стоки_бара') {
   try {
@@ -100,24 +96,22 @@ export function exportToCSV(products, categories = [], filename = 'стоки_б
     // ============================================================
     // ШАГ 1: ФИЛЬТРАЦИЯ ЗАМОРОЖЕННЫХ
     // ============================================================
-    // КРИТИЧНО: Убираем замороженные продукты (is_frozen = true)
     const activeProducts = products.filter(p => p.is_frozen !== true)
     
     console.log(`❄️ Замороженных: ${products.length - activeProducts.length}`)
     console.log(`✅ К экспорту: ${activeProducts.length}`)
 
     // ============================================================
-    // ШАГ 2: СОРТИРОВКА в правильном порядке
+    // ШАГ 2: СОРТИРОВКА
     // ============================================================
     const sortedProducts = sortProductsCorrectly(activeProducts, categories)
-    console.log(`✅ Продукты отсортированы`)
+    console.log(`✅ Продукты отсортированы по категориям`)
 
     // ============================================================
-    // ШАГ 3: ЗАГОЛОВКИ
+    // ШАГ 3: ЗАГОЛОВКИ (БЕЗ "Тара мл")
     // ============================================================
     const headers = [
       'Наименование',
-      'Тара мл',
       'Бар 1 (Факт)',
       'Бар 2 (Факт)',
       'Холод. комната (Факт)',
@@ -136,7 +130,7 @@ export function exportToCSV(products, categories = [], filename = 'стоки_б
 
       return [
         product.name || '',                    // Наименование
-        product.volume || 'л',                 // Тара
+        // УБРАНА колонка product.volume (Тара)
         formatNumberForCSV(bar1),              // Бар 1
         formatNumberForCSV(bar2),              // Бар 2
         formatNumberForCSV(coldRoom),          // Холодная комната
@@ -205,13 +199,6 @@ export function exportToCSV(products, categories = [], filename = 'стоки_б
 
 /**
  * Экспорт с фильтрацией по категории
- * КРИТИЧНО: Замороженные продукты НЕ экспортируются
- * 
- * @param {Array<Object>} products - Все продукты
- * @param {string} categoryId - ID категории для фильтра
- * @param {Array<Object>} categories - Массив категорий
- * @param {string} filename - Имя файла
- * @returns {Object} Результат экспорта
  */
 export function exportCategoryToCSV(products, categoryId, categories, filename) {
   const filtered = products.filter(p => 
@@ -220,7 +207,7 @@ export function exportCategoryToCSV(products, categoryId, categories, filename) 
   const category = categories.find(c => c.id === categoryId)
   const categoryName = category?.name || 'category'
   
-  console.log(`📦 Экспорт категории: ${categoryName} (${filtered.length} активных продуктов)`)
+  console.log(`📦 Экспорт категории: ${categoryName} (${filtered.length} продуктов)`)
   
   return exportToCSV(
     filtered, 
@@ -231,24 +218,17 @@ export function exportCategoryToCSV(products, categoryId, categories, filename) 
 
 /**
  * Экспорт только замороженных продуктов
- * 
- * @param {Array<Object>} products - Все продукты
- * @param {Array<Object>} categories - Массив категорий
- * @param {string} filename - Имя файла
- * @returns {Object} Результат экспорта
  */
 export function exportFrozenToCSV(products, categories, filename = 'замороженные') {
   const frozen = products.filter(p => p.is_frozen === true)
   
   console.log(`❄️ Экспорт замороженных: ${frozen.length} продуктов`)
   
-  // Для замороженных используем прямую функцию без фильтра
   return exportToCSVInternal(frozen, categories, filename)
 }
 
 /**
  * Внутренняя функция экспорта БЕЗ фильтра замороженных
- * Используется для exportFrozenToCSV
  */
 function exportToCSVInternal(products, categories, filename) {
   try {
@@ -256,7 +236,6 @@ function exportToCSVInternal(products, categories, filename) {
     
     const headers = [
       'Наименование',
-      'Тара мл',
       'Бар 1 (Факт)',
       'Бар 2 (Факт)',
       'Холод. комната (Факт)',
@@ -271,7 +250,6 @@ function exportToCSVInternal(products, categories, filename) {
 
       return [
         product.name || '',
-        product.volume || 'л',
         formatNumberForCSV(bar1),
         formatNumberForCSV(bar2),
         formatNumberForCSV(coldRoom),
@@ -317,12 +295,7 @@ function exportToCSVInternal(products, categories, filename) {
 }
 
 /**
- * Экспорт только активных (незамороженных) продуктов
- * 
- * @param {Array<Object>} products - Все продукты
- * @param {Array<Object>} categories - Массив категорий
- * @param {string} filename - Имя файла
- * @returns {Object} Результат экспорта
+ * Экспорт только активных продуктов
  */
 export function exportActiveToCSV(products, categories, filename = 'активные') {
   const active = products.filter(p => p.is_frozen !== true)
@@ -334,13 +307,6 @@ export function exportActiveToCSV(products, categories, filename = 'активн
 
 /**
  * Экспорт с фильтром по видимости для бара
- * КРИТИЧНО: Замороженные продукты НЕ экспортируются
- * 
- * @param {Array<Object>} products - Все продукты
- * @param {string} barName - 'bar1' или 'bar2'
- * @param {Array<Object>} categories - Массив категорий
- * @param {string} filename - Имя файла
- * @returns {Object} Результат экспорта
  */
 export function exportBarVisibleProducts(products, barName, categories, filename) {
   const visibilityField = `visible_to_${barName}`
