@@ -1,6 +1,5 @@
 import React from 'react'
 import { formatNumber } from './utils/format'
-import './ProductList.css'
 
 // ============================================
 // КОНФИГУРАЦИЯ КОЛОНОК
@@ -177,7 +176,7 @@ function ProductList({ products, searchQuery, categoryId, availableColumns, onEd
    */
   if (filteredProducts.length === 0) {
     return (
-      <div className="product-list-empty">
+      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-600 p-8 text-center text-gray-500 dark:text-gray-400 mb-4 transition-colors">
         <p>Продукты не найдены</p>
       </div>
     )
@@ -188,18 +187,18 @@ function ProductList({ products, searchQuery, categoryId, availableColumns, onEd
   // ============================================
 
   return (
-    <div className="product-list">
-      <table className="product-table">
+    <div className="w-full border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-4 transition-colors">
+      <table className="w-full border-collapse table-fixed text-[10px] sm:text-xs md:text-sm">
         
         {/* ===== ЗАГОЛОВОК ТАБЛИЦЫ ===== */}
         <thead>
-          <tr>
-            <th className="col-name">Наименование</th>
-            <th className="col-volume">Тара, мл</th>
+          <tr className="bg-gray-100 dark:bg-gray-900/50 transition-colors">
+            <th className="p-1 sm:p-2 text-left font-bold text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-700 w-[28%] sm:w-[30%] lg:w-[40%] break-words">Наименование</th>
+            <th className="p-1 sm:p-2 text-center font-bold text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-700 w-[8%] lg:w-[10%] break-words">Тара, мл</th>
             
             {/* Колонки для каждого доступного склада */}
             {activeColumns.map(col => (
-              <th key={col} className="col-stock">
+              <th key={col} className="p-1 sm:p-2 text-center font-bold text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-700 w-[22%] sm:w-[20%] lg:w-auto break-words">
                 {COLUMN_CONFIG[col].title}
               </th>
             ))}
@@ -216,30 +215,30 @@ function ProductList({ products, searchQuery, categoryId, availableColumns, onEd
               <React.Fragment key={category}>
                 
                 {/* ===== СТРОКА КАТЕГОРИИ ===== */}
-                <tr className="category-row">
-                  <td colSpan={2 + activeColumns.length}>
-                    <span className="category-name">{category}</span>
-                    <span className="category-count">({prods.length})</span>
+                <tr className="bg-gray-50 dark:bg-gray-800/50 transition-colors">
+                  <td colSpan={2 + activeColumns.length} className="p-1.5 sm:p-2 border-b border-gray-200 dark:border-gray-700">
+                    <span className="font-bold text-gray-900 dark:text-gray-100 text-[11px] sm:text-xs mr-1">{category}</span>
+                    <span className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400">({prods.length})</span>
                   </td>
                 </tr>
 
                 {/* ===== СТРОКИ ПРОДУКТОВ ===== */}
                 {/* Продукты УЖЕ отсортированы по order_index */}
                 {prods.map(product => (
-                  <tr key={product.id} className="product-row">
+                  <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                     
                     {/* Название продукта */}
-                    <td className="col-name">{product.name}</td>
+                    <td className="p-1.5 sm:p-2 border-b border-gray-100 dark:border-gray-700/50 text-gray-800 dark:text-gray-200 truncate">{product.name}</td>
                     
                     {/* Объем тары */}
-                    <td className="col-volume">{product.volume}</td>
+                    <td className="p-1.5 sm:p-2 border-b border-gray-100 dark:border-gray-700/50 text-gray-800 dark:text-gray-200 text-center">{product.volume}</td>
                     
                     {/* Значения для каждого склада */}
                     {activeColumns.map(col => (
-                      <td key={col} className="col-stock">
+                      <td key={col} className="p-1 sm:p-2 border-b border-gray-100 dark:border-gray-700/50 text-center overflow-visible">
                         <button
                           onClick={() => onEdit(product, col)}
-                          className="stock-button"
+                          className="inline-flex items-center justify-center w-full min-h-[34px] sm:min-h-[38px] md:min-h-[44px] px-1 py-1 text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm cursor-pointer transition-all hover:border-primary dark:hover:border-primary hover:text-primary dark:hover:text-primary-dark active:scale-[0.97]"
                           title={`Изменить ${COLUMN_CONFIG[col].label}: ${product.name}`}
                         >
                           {formatNumber(product[col])}

@@ -56,7 +56,8 @@
 |------------|--------|------------|
 | **React** | 18.3.1 | UI библиотека для построения интерфейса |
 | **Vite** | 5.4.11 | Быстрый сборщик и dev-сервер |
-| **Tailwind CSS** | 3.4.15 | Utility-first CSS фреймворк для стилизации |
+| **Tailwind CSS** | 3.4.15 | Современная стилизация через утилитарные классы |
+| **UI Components** | Custom | Переиспользуемая библиотека компонентов (Button, Table, Modal, Card) |
 | **Lucide React** | 0.454.0 | Современная библиотека иконок |
 
 ### Backend & Database
@@ -337,8 +338,10 @@ bar-inventory-system/
 ├── src/
 │   ├── api/               # API слой
 │   │   ├── supabase.js        # Supabase API клиент
-│   │   └── bulkOperations.js  # Bulk RPC операции
+│   │   ├── adminOperations.js # Админские операции
+│   │   └── bulkOperations.js  # Массовые операции (sync)
 │   ├── components/        # React компоненты
+│   │   ├── ui/                # Переиспользуемые UI компоненты (Button, Input, etc.)
 │   │   ├── Notification.jsx   # Уведомления
 │   │   ├── NumberEditModal.jsx # Модальное окно редактирования
 │   │   ├── AddModal.jsx       # Модальное окно добавления
@@ -347,11 +350,10 @@ bar-inventory-system/
 │   │   ├── format.js          # Форматирование чисел
 │   │   └── export.js          # Экспорт в CSV
 │   ├── AuthContext.jsx    # Контекст аутентификации
-│   ├── Login.jsx          # Страница входа
+│   ├── LoginPage.jsx      # Страница входа
 │   ├── MainApp.jsx        # Главный компонент
 │   ├── ProductList.jsx    # Список продуктов
-│   ├── MainApp.css        # Стили главного компонента
-│   ├── ProductList.css    # Стили списка продуктов
+│   ├── index.css          # Глобальные стили и Tailwind
 │   └── main.jsx           # Точка входа
 ├── sql/                   # SQL скрипты для Supabase
 │   ├── 01-create-tables.sql
@@ -533,6 +535,8 @@ MIT License - см. файл [LICENSE](LICENSE)
 
 ---
 
-**Версия:** 2.2.0  
-**Последнее обновление:** 2026-02-01  
+**Версия:** 3.0.0 (Tailwind Migration)
+**Последнее обновление:** 2026-02-12
 **Статус:** Production Ready ✅
+
+Более подробную информацию о дизайн-системе и компонентах см. в [STYLE_GUIDE.md](STYLE_GUIDE.md).

@@ -75,22 +75,22 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-fade-in"
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-gray-800 rounded-xl p-5 w-11/12 max-w-sm" 
+        className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-heavy animate-slide-up transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Заголовок */}
-        <h3 className="text-center font-semibold mb-4 dark:text-white">
-          {type === 'category' ? 'Добавить категорию' : 'Добавить продукт'}
+        <h3 className="text-center font-bold text-gray-900 dark:text-gray-100 mb-6">
+          {type === 'category' ? '📁 Добавить категорию' : '📦 Добавить продукт'}
         </h3>
 
         {/* ФОРМА ДЛЯ КАТЕГОРИИ */}
         {type === 'category' && (
-          <div className="mb-3">
-            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+          <div className="flex flex-col gap-1.5 mb-4">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
               Название категории
             </label>
             <input
@@ -98,8 +98,8 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Введите название категории"
-              className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500"
+              placeholder="Например: Пиво"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-primary transition-all"
               autoFocus
             />
           </div>
@@ -107,17 +107,17 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
 
         {/* ФОРМА ДЛЯ ПРОДУКТА */}
         {type === 'product' && (
-          <>
+          <div className="flex flex-col gap-4">
             {/* Выбор категории */}
-            <div className="mb-3">
-              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
                 Категория
               </label>
               <select
                 value={selectedCategoryId}
                 onChange={(e) => setSelectedCategoryId(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-primary transition-all"
               >
                 <option value="">Выберите категорию</option>
                 {categories.map((cat) => (
@@ -129,8 +129,8 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
             </div>
 
             {/* Название продукта */}
-            <div className="mb-3">
-              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
                 Название продукта
               </label>
               <input
@@ -138,14 +138,14 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Введите название"
-                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500"
+                placeholder="Например: Guinness"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-primary transition-all"
               />
             </div>
 
             {/* Объем */}
-            <div className="mb-3">
-              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
                 Объем тары
               </label>
               <input
@@ -153,24 +153,24 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
                 value={productVolume}
                 onChange={(e) => setProductVolume(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Например: 750 мл, 1 л"
-                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500"
+                placeholder="Например: 500 мл"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-primary transition-all"
               />
             </div>
-          </>
+          </div>
         )}
 
         {/* Кнопки */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-3 mt-8">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
           >
             Отмена
           </button>
           <button
             onClick={handleAdd}
-            className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="flex-1 py-3 bg-primary text-white rounded-xl text-sm font-bold shadow-md hover:bg-primary-hover transition-all active:scale-95"
           >
             Добавить
           </button>

@@ -42,7 +42,6 @@ import AdminProductList from './AdminProductList'
 import Notification from './Notification'
 import AddModal from './AddModal'
 import FlagModal from './FlagModal'
-import './AdminPanel.css'
 
 /**
  * ============================================================
@@ -528,20 +527,22 @@ const AdminPanel = () => {
   // ============================================================
   
   return (
-    <div className="admin-panel">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
       {/* HEADER */}
-      <header className="admin-panel-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1>🎛️ Админ-панель</h1>
-            <p className="header-subtitle">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 sticky top-0 z-50 transition-colors">
+        <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <span>🎛️</span> Админ-панель
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Управление продуктами и сценариями
             </p>
           </div>
-          <div className="header-right">
+          <div>
             <button
               onClick={() => navigate('/')}
-              className="btn-secondary"
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium transition-all"
             >
               ← Вернуться к приложению
             </button>
@@ -550,35 +551,42 @@ const AdminPanel = () => {
       </header>
 
       {/* NAVIGATION TABS */}
-      <div className="admin-panel-tabs">
-        <button
-          className={`tab ${activeTab === 'products' ? 'active' : ''}`}
-          onClick={() => setActiveTab('products')}
-        >
-          📦 Продукты
-        </button>
+      <div className="max-w-7xl mx-auto px-4 mt-6">
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
+          <button
+            className={`px-6 py-3 text-sm font-medium transition-all border-b-2
+              ${activeTab === 'products'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            onClick={() => setActiveTab('products')}
+          >
+            📦 Продукты
+          </button>
+        </div>
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="admin-panel-content">
+      <div className="max-w-7xl mx-auto p-4 md:p-6">
         {activeTab === 'products' && (
-          <div className="products-view">
+          <div className="animate-slide-up">
             
             {/* НОВОЕ: СЕКЦИЯ СЦЕНАРИЕВ */}
-            <div className="scenarios-section">
-              <h3>⚡ Сценарии</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-soft border border-gray-100 dark:border-gray-700 mb-8 transition-colors">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+                <span>⚡</span> Сценарии
+              </h3>
               
               {/* Активный сценарий */}
               {activeScenario && (
-                <div className="active-scenario-banner">
-                  <span className="scenario-icon">
+                <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 mb-6 flex flex-wrap items-center gap-4 animate-pulse">
+                  <span className="text-2xl">
                     {Object.values(SCENARIO_TYPES).find(s => s.id === activeScenario)?.icon}
                   </span>
-                  <div className="scenario-info">
-                    <div className="scenario-name">
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="font-bold text-primary">
                       Активен: {Object.values(SCENARIO_TYPES).find(s => s.id === activeScenario)?.name}
                     </div>
-                    <div className="scenario-stats">
+                    <div className="text-sm text-primary/80">
                       Активных позиций: {
                         activeScenario === 'stocks' ? flagsStats?.red :
                         activeScenario === 'revision' ? flagsStats?.green :
@@ -587,7 +595,7 @@ const AdminPanel = () => {
                     </div>
                   </div>
                   <button 
-                    className="btn-stop-scenario"
+                    className="px-4 py-2 bg-white dark:bg-gray-700 text-primary dark:text-primary-dark rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all active:scale-95"
                     onClick={handleStopScenarios}
                   >
                     ⏹️ Остановить
@@ -596,21 +604,24 @@ const AdminPanel = () => {
               )}
               
               {/* Кнопки запуска */}
-              <div className="scenarios-grid">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* СТОКИ */}
-                <div className="scenario-card">
-                  <div className="scenario-header">
-                    <span className="scenario-icon-large">🔴</span>
+                <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-5 border border-gray-100 dark:border-gray-700 transition-colors">
+                  <div className="flex items-start gap-4 mb-4">
+                    <span className="text-3xl">🔴</span>
                     <div>
-                      <div className="scenario-title">Стоки</div>
-                      <div className="scenario-subtitle">Еженедельный учет</div>
+                      <div className="font-bold text-gray-900 dark:text-gray-100">Стоки</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Еженедельный учет</div>
                     </div>
                   </div>
-                  <div className="scenario-count">
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
                     {flagsStats?.red || 0} позиций
                   </div>
                   <button
-                    className="btn-run-scenario scenario-red"
+                    className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all
+                      ${activeScenario === 'stocks'
+                        ? 'bg-red-100 text-red-600 cursor-default'
+                        : 'bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95'}`}
                     onClick={() => handleRunScenario('stocks')}
                     disabled={activeScenario === 'stocks'}
                   >
@@ -619,19 +630,22 @@ const AdminPanel = () => {
                 </div>
                 
                 {/* РЕВИЗИЯ */}
-                <div className="scenario-card">
-                  <div className="scenario-header">
-                    <span className="scenario-icon-large">🟢</span>
+                <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-5 border border-gray-100 dark:border-gray-700 transition-colors">
+                  <div className="flex items-start gap-4 mb-4">
+                    <span className="text-3xl">🟢</span>
                     <div>
-                      <div className="scenario-title">Ревизия</div>
-                      <div className="scenario-subtitle">Полная инвентаризация</div>
+                      <div className="font-bold text-gray-900 dark:text-gray-100">Ревизия</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Полная инвентаризация</div>
                     </div>
                   </div>
-                  <div className="scenario-count">
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
                     {flagsStats?.green || 0} позиций
                   </div>
                   <button
-                    className="btn-run-scenario scenario-green"
+                    className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all
+                      ${activeScenario === 'revision'
+                        ? 'bg-green-100 text-green-600 cursor-default'
+                        : 'bg-green-600 hover:bg-green-700 text-white shadow-md active:scale-95'}`}
                     onClick={() => handleRunScenario('revision')}
                     disabled={activeScenario === 'revision'}
                   >
@@ -640,19 +654,22 @@ const AdminPanel = () => {
                 </div>
                 
                 {/* ДОЛГАЯ ЗАМОРОЗКА */}
-                <div className="scenario-card">
-                  <div className="scenario-header">
-                    <span className="scenario-icon-large">🟡</span>
+                <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-5 border border-gray-100 dark:border-gray-700 transition-colors">
+                  <div className="flex items-start gap-4 mb-4">
+                    <span className="text-3xl">🟡</span>
                     <div>
-                      <div className="scenario-title">Долгая заморозка</div>
-                      <div className="scenario-subtitle">Архив/сезонные</div>
+                      <div className="font-bold text-gray-900 dark:text-gray-100">Долгая заморозка</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Архив/сезонные</div>
                     </div>
                   </div>
-                  <div className="scenario-count">
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
                     {flagsStats?.yellow || 0} позиций
                   </div>
                   <button
-                    className="btn-run-scenario scenario-yellow"
+                    className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all
+                      ${activeScenario === 'long_freeze'
+                        ? 'bg-amber-100 text-amber-600 cursor-default'
+                        : 'bg-amber-500 hover:bg-amber-600 text-white shadow-md active:scale-95'}`}
                     onClick={() => handleRunScenario('long_freeze')}
                     disabled={activeScenario === 'long_freeze'}
                   >
@@ -663,10 +680,10 @@ const AdminPanel = () => {
             </div>
 
             {/* FILTERS AND SEARCH */}
-            <div className="admin-panel-controls">
+            <div className="flex flex-wrap items-end gap-4 mb-8 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
               {/* Категории */}
-              <div className="control-group">
-                <label>Категория:</label>
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Категория:</label>
                 <select
                   value={selectedCategory?.id || ''}
                   onChange={(e) => {
@@ -675,7 +692,7 @@ const AdminPanel = () => {
                       catId ? categories.find(c => c.id === parseInt(catId)) : null
                     )
                   }}
-                  className="select-category"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                 >
                   <option value="">Все категории</option>
                   {categories.map(cat => (
@@ -687,61 +704,66 @@ const AdminPanel = () => {
               </div>
 
               {/* Поиск */}
-              <div className="control-group">
-                <label>Поиск:</label>
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Поиск:</label>
                 <input
                   type="text"
                   placeholder="Название или объем..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                 />
               </div>
 
               {/* Фильтры статуса */}
-              <div className="control-group">
-                <label>Показать:</label>
-                <div className="checkbox-group">
-                  <label className="checkbox-label">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Показать:</label>
+                <div className="flex items-center gap-4 bg-white dark:bg-gray-700 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg h-[38px]">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={showActive}
                       onChange={(e) => setShowActive(e.target.checked)}
+                      className="w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300"
                     />
-                    <span>Активные</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors">Активные</span>
                   </label>
-                  <label className="checkbox-label">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={showFrozen}
                       onChange={(e) => setShowFrozen(e.target.checked)}
+                      className="w-4 h-4 rounded text-primary focus:ring-primary/20 border-gray-300"
                     />
-                    <span>Замороженные</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors">Замороженные</span>
                   </label>
                 </div>
               </div>
 
               {/* Кнопка обновления */}
-              <div className="control-group">
-                <button onClick={loadData} className="btn-refresh">
+              <div className="flex-shrink-0">
+                <button
+                  onClick={loadData}
+                  className="h-[38px] px-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-all flex items-center gap-2 active:scale-95"
+                >
                   🔄 Обновить
                 </button>
               </div>
 
               {/* Кнопки добавления */}
-              <div className="control-group">
+              <div className="flex-shrink-0">
                 <button
                   onClick={() => setAddModal({ isOpen: true, type: 'product' })}
-                  className="btn-add-product"
+                  className="h-[38px] px-4 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95 flex items-center gap-2"
                 >
                   ➕ Добавить продукт
                 </button>
               </div>
 
-              <div className="control-group">
+              <div className="flex-shrink-0">
                 <button
                   onClick={() => setAddModal({ isOpen: true, type: 'category' })}
-                  className="btn-add-category"
+                  className="h-[38px] px-4 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95 flex items-center gap-2"
                 >
                   ➕ Добавить категорию
                 </button>
@@ -761,9 +783,9 @@ const AdminPanel = () => {
 
             {/* EMPTY STATE */}
             {filteredProducts.length === 0 && (
-              <div className="empty-state">
-                <p>🔍 Продукты не найдены</p>
-                <p className="empty-state-hint">
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700 transition-colors">
+                <p className="text-lg font-medium text-gray-900 dark:text-gray-100">🔍 Продукты не найдены</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                   Попробуйте изменить фильтры или поисковый запрос
                 </p>
               </div>

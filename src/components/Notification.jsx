@@ -125,15 +125,10 @@ const Notification = ({ message, type, onClose }) => {
         px-6 py-4
         rounded-xl
         border-2 ${config.borderColor}
-        shadow-2xl
+        shadow-heavy backdrop-blur-md
         transition-all duration-300 ease-out
         ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}
       `}
-      style={{
-        // Дополнительные стили для максимальной видимости
-        backdropFilter: 'blur(10px)',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset'
-      }}
     >
       {/* ============================================================ */}
       {/* КОНТЕЙНЕР КОНТЕНТА */}
@@ -186,27 +181,8 @@ const Notification = ({ message, type, onClose }) => {
       {/* ПРОГРЕСС БАР (опционально) */}
       {/* ============================================================ */}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 rounded-b-xl overflow-hidden">
-        <div 
-          className="h-full bg-white/40"
-          style={{
-            animation: 'progress 5s linear forwards'
-          }}
-        />
+        <div className="h-full bg-white/40 animate-progress" />
       </div>
-
-      {/* ============================================================ */}
-      {/* АНИМАЦИЯ ПРОГРЕСС БАРА */}
-      {/* ============================================================ */}
-      <style jsx>{`
-        @keyframes progress {
-          from {
-            width: 100%;
-          }
-          to {
-            width: 0%;
-          }
-        }
-      `}</style>
     </div>
   )
 }
