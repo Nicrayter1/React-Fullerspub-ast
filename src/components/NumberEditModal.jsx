@@ -61,20 +61,20 @@ const NumberEditModal = ({ isOpen, title, value, onClose, onConfirm }) => {
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-fade-in"
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-gray-800 rounded-xl p-5 w-11/12 max-w-sm" 
+        className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-heavy animate-slide-up transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Заголовок */}
-        <h3 className="text-center font-semibold mb-3 dark:text-white">
+        <h3 className="text-center font-bold text-gray-900 dark:text-gray-100 mb-2">
           {title}
         </h3>
         
         {/* Подсказка */}
-        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mb-6">
           Используйте точку для дробей: 0.5 или 1.5
         </p>
         
@@ -87,20 +87,20 @@ const NumberEditModal = ({ isOpen, title, value, onClose, onConfirm }) => {
           onKeyDown={handleKeyDown}
           placeholder="0"
           autoFocus
-          className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500"
+          className="w-full px-4 py-3 border-2 border-gray-100 dark:border-gray-700 rounded-xl text-lg text-center font-bold text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900/50 focus:outline-none focus:border-primary dark:focus:border-primary transition-all"
         />
         
         {/* Кнопки действий */}
-        <div className="flex gap-2.5 mt-4">
+        <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 bg-gray-500 text-white rounded-lg text-sm font-medium hover:bg-gray-600 transition"
+            className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
           >
             Отмена
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 py-2.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition"
+            className="flex-1 py-3 bg-primary text-white rounded-xl text-sm font-bold shadow-md hover:bg-primary-hover transition-all active:scale-95"
           >
             OK
           </button>

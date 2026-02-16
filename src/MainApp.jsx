@@ -13,6 +13,8 @@ import Notification from './components/Notification'
 import SearchInput from './components/SearchInput'
 import NumberEditModal from './components/NumberEditModal'
 import ProductList from './ProductList'
+import Button from './components/ui/Button'
+import AddModal from './components/AddModal'
 
 // Импорт утилит
 import { parseNumber } from './utils/format'
@@ -20,8 +22,6 @@ import { exportToCSV } from './utils/export'
 
 // Импорт API
 import supabaseAPI from './api/supabase'
-
-import './MainApp.css'
 
 function MainApp() {
   const { user, userProfile, signOut, getAvailableColumns } = useAuth()
@@ -45,6 +45,10 @@ function MainApp() {
     product: null,
     field: '',
     title: ''
+  })
+  const [addModal, setAddModal] = useState({
+    isOpen: false,
+    type: 'product' // 'product' | 'category'
   })
 
   // Доступные колонки для текущего пользователя
@@ -605,37 +609,46 @@ const saveToSupabase = useCallback(async () => {
   // === RENDER ===
 
   return (
-    <div className="main-app">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
       {/* Шапка с информацией о пользователе */}
-      <header className="app-header">
-        <div className="header-content">
-          <h1 className="app-title">Учет стоков бара</h1>
+      <header className="bg-slate-900 dark:bg-gray-950 text-white p-4 shadow-lg sticky top-0 z-50 transition-colors">
+        <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+          <h1 className="text-xl font-bold">Учет стоков бара</h1>
 
-          <div className="user-info">
-            <div className="user-details">
-              <User className="user-icon" />
-              <div className="user-text">
-                <span className="user-email">{user?.email}</span>
-                <span className="user-role">{getRoleDisplayName(userProfile?.role)}</span>
+          <div className="flex items-center gap-3 md:gap-4 flex-wrap">
+            <div className="flex items-center gap-2 bg-white/10 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+              <User className="w-5 h-5 text-gray-300" />
+              <div className="flex flex-col">
+                <span className="text-xs md:text-sm font-medium leading-tight">{user?.email}</span>
+                <span className="text-[10px] md:text-xs text-gray-400 leading-tight">{getRoleDisplayName(userProfile?.role)}</span>
               </div>
             </div>
             {userProfile?.role === 'manager' && (
-              <button onClick={() => navigate('/admin')} className="admin-button">
-                <Settings className="admin-icon" />
-                <span>Админ-панель</span>
-              </button>
+              <Button
+                onClick={() => navigate('/admin')}
+                variant="primary"
+                size="sm"
+                className="bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-indigo-200 shadow-none"
+                icon={Settings}
+              >
+                <span className="hidden sm:inline">Админ-панель</span>
+              </Button>
             )}
-            <button onClick={handleSignOut} className="logout-button">
-              <LogOut className="logout-icon" />
-              <span>Выйти</span>
-            </button>
+            <Button
+              onClick={handleSignOut}
+              variant="danger"
+              size="sm"
+              icon={LogOut}
+            >
+              <span className="hidden sm:inline">Выйти</span>
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Основной контент */}
-      <main className="app-main">
-        <div className="content-container">
+      <main className="p-4 md:p-6">
+        <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-soft transition-colors">
           {/* Уведомления */}
           <Notification
             message={notification.message}
@@ -647,35 +660,39 @@ const saveToSupabase = useCallback(async () => {
           <SearchInput value={searchQuery} onChange={setSearchQuery} />
 
           {/* Навигация по категориям */}
-          <div className="category-nav">
-            <button
-              className={`category-nav-btn ${activeCategory === null ? 'active' : ''}`}
+          <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700 overflow-x-auto">
+            <Button
+              variant={activeCategory === null ? 'primary' : 'ghost'}
+              size="sm"
+              className={`rounded-full whitespace-nowrap ${activeCategory !== null ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
               onClick={() => setActiveCategory(null)}
             >
               Все
-            </button>
+            </Button>
             {categories.map(cat => (
-              <button
+              <Button
                 key={cat.id}
-                className={`category-nav-btn ${activeCategory === cat.id ? 'active' : ''}`}
+                variant={activeCategory === cat.id ? 'primary' : 'ghost'}
+                size="sm"
+                className={`rounded-full whitespace-nowrap ${activeCategory !== cat.id ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
                 onClick={() => setActiveCategory(cat.id)}
               >
                 {cat.name}
-              </button>
+              </Button>
             ))}
           </div>
 
-          {/* Кнопки действий удалены - перенесены в админ-панель */}
-
-          <div className="action-buttons">
-            <button
+          {/* Кнопки действий */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            <Button
               onClick={syncWithSupabase}
-              disabled={loading}
-              className="action-btn sync"
+              loading={loading}
+              variant="info"
+              className="flex-1 min-w-[140px]"
+              icon={RefreshCw}
             >
-              <RefreshCw className={`btn-icon ${loading ? 'spinning' : ''}`} />
               Синхронизировать
-            </button>
+            </Button>
           </div>
 
           {/* Таблица продуктов */}
@@ -688,26 +705,31 @@ const saveToSupabase = useCallback(async () => {
           />
 
           {/* Кнопки сохранения */}
-          <div className="save-buttons">
-            <button
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-8">
+            <Button
               onClick={() => saveToLocalStorage(true)}
-              className="save-btn local"
+              variant="secondary"
+              className="bg-blue-600 hover:bg-blue-700"
+              icon={Save}
             >
-              <Save className="btn-icon" /> Сохранить локально
-            </button>
-            <button
+              Сохранить локально
+            </Button>
+            <Button
               onClick={saveToSupabase}
-              disabled={loading}
-              className="save-btn cloud"
+              loading={loading}
+              variant="primary"
+              icon={Upload}
             >
-              <Upload className="btn-icon" /> Сохранить в БД
-            </button>
-            <button
+              Сохранить в БД
+            </Button>
+            <Button
               onClick={handleExport}
-              className="save-btn export"
+              variant="ghost"
+              className="bg-gray-600 hover:bg-gray-700 text-white"
+              icon={Download}
             >
-              <Download className="btn-icon" /> Экспорт CSV
-            </button>
+              Экспорт CSV
+            </Button>
           </div>
         </div>
       </main>
@@ -719,6 +741,14 @@ const saveToSupabase = useCallback(async () => {
         value={editModal.product?.[editModal.field]}
         onClose={() => setEditModal({ isOpen: false, product: null, field: '', title: '' })}
         onConfirm={handleConfirmEdit}
+      />
+
+      <AddModal
+        isOpen={addModal.isOpen}
+        type={addModal.type}
+        categories={categories}
+        onClose={() => setAddModal({ isOpen: false, type: 'product' })}
+        onAdd={handleAddItem}
       />
     </div>
   )

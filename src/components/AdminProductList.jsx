@@ -21,7 +21,6 @@
  */
 
 import React, { useState } from 'react'
-import './AdminProductList.css'
 
 /**
  * ============================================================
@@ -39,11 +38,15 @@ const ProductRow = ({
   onFreeze,
   onUnfreeze,
   onDelete,
-  onOpenFlagModal  // НОВОЕ: функция открытия модалки флагов
+  onOpenFlagModal
 }) => {
   return (
     <tr
-      className={`product-row ${isDragging ? 'dragging' : ''} ${product.is_frozen ? 'frozen-product' : ''}`}
+      className={`
+        transition-colors border-b border-gray-100 dark:border-gray-700/50
+        ${isDragging ? 'bg-primary/5 opacity-50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'}
+        ${product.is_frozen ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
+      `}
       draggable={true}
       onDragStart={(e) => onDragStart(e, index)}
       onDragEnd={onDragEnd}
@@ -51,57 +54,59 @@ const ProductRow = ({
       onDrop={(e) => onDrop(e, index)}
     >
       {/* Drag Handle */}
-      <td className="drag-handle-cell">
-        <span className="drag-handle" title="Перетащите для изменения порядка">⋮⋮</span>
+      <td className="p-2 sm:p-3 text-center w-10 sm:w-12">
+        <span className="cursor-move text-gray-400 dark:text-gray-600 text-lg sm:text-xl select-none" title="Перетащите для изменения порядка">⋮⋮</span>
       </td>
 
       {/* Product Name */}
-      <td className="col-name">
-        {product.name}
-        {product.is_frozen && (
-          <span className="frozen-badge" title="Продукт заморожен"> ❄️</span>
-        )}
+      <td className="p-2 sm:p-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+        <div className="flex items-center gap-2">
+          {product.name}
+          {product.is_frozen && (
+            <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded" title="Продукт заморожен">❄️</span>
+          )}
+        </div>
       </td>
 
       {/* Volume */}
-      <td className="col-volume">{product.volume}</td>
+      <td className="p-2 sm:p-3 text-sm text-gray-500 dark:text-gray-400">{product.volume}</td>
 
       {/* Stock Levels */}
-      <td className="col-stock">
-        <div className="stock-display">{product.bar1}</div>
+      <td className="p-2 sm:p-3 text-center">
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md py-1">{product.bar1}</div>
       </td>
-      <td className="col-stock">
-        <div className="stock-display">{product.bar2}</div>
+      <td className="p-2 sm:p-3 text-center">
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md py-1">{product.bar2}</div>
       </td>
-      <td className="col-stock">
-        <div className="stock-display">{product.cold_room}</div>
+      <td className="p-2 sm:p-3 text-center">
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md py-1">{product.cold_room}</div>
       </td>
 
       {/* Actions */}
-      <td className="col-actions">
-        <div className="action-buttons">
+      <td className="p-2 sm:p-3">
+        <div className="flex items-center justify-end gap-1 sm:gap-2">
           
-          {/* НОВОЕ: Flag Button - Кнопка управления флагами */}
+          {/* Flag Button */}
           <button
             onClick={() => onOpenFlagModal(product)}
-            className="btn-action btn-flag"
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all"
             title="Управление флагами"
           >
-            <span className="flag-icons">
-              {product.red_flag && <span className="flag-red">🔴</span>}
-              {product.green_flag && <span className="flag-green">🟢</span>}
-              {product.yellow_flag && <span className="flag-yellow">🟡</span>}
+            <div className="flex gap-0.5 scale-75 sm:scale-100">
+              {product.red_flag && <span>🔴</span>}
+              {product.green_flag && <span>🟢</span>}
+              {product.yellow_flag && <span>🟡</span>}
               {!product.red_flag && !product.green_flag && !product.yellow_flag && (
-                <span className="flag-empty">⚪</span>
+                <span className="opacity-30">⚪</span>
               )}
-            </span>
+            </div>
           </button>
 
           {/* Freeze/Unfreeze Button */}
           {!product.is_frozen ? (
             <button
               onClick={() => onFreeze(product.id)}
-              className="btn-action btn-freeze"
+              className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg transition-all active:scale-95"
               title="Заморозить продукт"
             >
               ❄️
@@ -109,7 +114,7 @@ const ProductRow = ({
           ) : (
             <button
               onClick={() => onUnfreeze(product.id)}
-              className="btn-action btn-unfreeze"
+              className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50 text-orange-600 dark:text-orange-400 rounded-lg transition-all active:scale-95"
               title="Разморозить продукт"
             >
               🔥
@@ -119,7 +124,7 @@ const ProductRow = ({
           {/* Delete Button */}
           <button
             onClick={() => onDelete(product.id, product.name)}
-            className="btn-action btn-delete"
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-all active:scale-95"
             title="Удалить продукт"
           >
             🗑️
@@ -252,58 +257,60 @@ const AdminProductList = ({
   
   if (products.length === 0) {
     return (
-      <div className="admin-product-list-empty">
-        <p>Продукты не найдены</p>
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-700 transition-colors">
+        <p className="text-gray-500 dark:text-gray-400">Продукты не найдены</p>
       </div>
     )
   }
 
   return (
-    <div className="admin-product-list">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors">
       {/* STATISTICS */}
-      <div className="product-list-stats">
-        <div className="stat-item">
-          <span className="stat-label">Всего:</span>
-          <span className="stat-value">{totalProducts}</span>
+      <div className="flex flex-wrap items-center gap-6 p-4 sm:p-6 bg-gray-50 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700 transition-colors">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Всего:</span>
+          <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{totalProducts}</span>
         </div>
-        <div className="stat-item">
-          <span className="stat-label">Активных:</span>
-          <span className="stat-value success">{activeProducts}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Активных:</span>
+          <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{activeProducts}</span>
         </div>
-        <div className="stat-item">
-          <span className="stat-label">Замороженных:</span>
-          <span className="stat-value warning">{frozenProducts}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Замороженных:</span>
+          <span className="text-lg font-bold text-amber-600 dark:text-amber-400">{frozenProducts}</span>
         </div>
       </div>
 
       {/* TABLE */}
-      <div className="product-table-container">
-        <table className="product-table">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
           {/* TABLE HEADER */}
           <thead>
-            <tr>
-              <th className="drag-handle-header"></th>
-              <th className="col-name">Наименование</th>
-              <th className="col-volume">Тара, мл</th>
-              <th className="col-stock">Бар 1 (Факт)</th>
-              <th className="col-stock">Бар 2 (Факт)</th>
-              <th className="col-stock">Холод. комната (Факт)</th>
-              <th className="col-actions">Действия</th>
+            <tr className="bg-gray-50 dark:bg-gray-900/20">
+              <th className="w-12 p-3 border-b border-gray-200 dark:border-gray-700 transition-colors"></th>
+              <th className="p-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 transition-colors">Наименование</th>
+              <th className="p-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 transition-colors">Тара, мл</th>
+              <th className="p-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 transition-colors w-24 sm:w-32">Бар 1</th>
+              <th className="p-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 transition-colors w-24 sm:w-32">Бар 2</th>
+              <th className="p-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 transition-colors w-24 sm:w-32">Холодильник</th>
+              <th className="p-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 transition-colors w-32 sm:w-48">Действия</th>
             </tr>
           </thead>
 
           {/* TABLE BODY */}
-          <tbody>
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
             {sortedCategories.map(categoryName => {
               const categoryProducts = groupedProducts[categoryName]
               
               return (
                 <React.Fragment key={categoryName}>
                   {/* CATEGORY ROW */}
-                  <tr className="category-row">
-                    <td colSpan="7">
-                      <span className="category-name">{categoryName}</span>
-                      <span className="category-count">({categoryProducts.length})</span>
+                  <tr className="bg-gray-50/50 dark:bg-gray-800/80 transition-colors">
+                    <td colSpan="7" className="p-3 sm:p-4 border-y border-gray-100 dark:border-gray-700">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{categoryName}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">({categoryProducts.length} поз.)</span>
+                      </div>
                     </td>
                   </tr>
 
@@ -332,9 +339,9 @@ const AdminProductList = ({
       </div>
 
       {/* HELP TEXT */}
-      <div className="product-list-footer">
-        <p className="help-text">
-          💡 Подсказка: перетащите строки для изменения порядка продуктов
+      <div className="p-4 bg-gray-50 dark:bg-gray-900/20 border-t border-gray-100 dark:border-gray-700 transition-colors">
+        <p className="text-xs text-gray-500 dark:text-gray-400 italic flex items-center gap-2">
+          <span>💡</span> Подсказка: перетащите строки за значок ⋮⋮ для изменения порядка продуктов
         </p>
       </div>
     </div>

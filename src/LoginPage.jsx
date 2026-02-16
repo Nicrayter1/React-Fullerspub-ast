@@ -6,7 +6,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthContext'
-import './LoginPage.css'
+import Button from './components/ui/Button'
+import Input from './components/ui/Input'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
@@ -56,12 +57,12 @@ function LoginPage() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-container">
-        <div className="login-card">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] p-4">
+      <div className="w-full max-w-[400px]">
+        <div className="bg-white/95 dark:bg-gray-800/95 rounded-2xl p-8 shadow-heavy animate-slide-up-slow">
           {/* Логотип / Заголовок */}
-          <div className="login-header">
-            <div className="login-icon">
+          <div className="text-center mb-8">
+            <div className="w-[60px] h-[60px] mx-auto mb-4 bg-gradient-to-br from-primary to-primary-hover rounded-xl flex items-center justify-center text-white">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -69,85 +70,50 @@ function LoginPage() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                className="w-8 h-8"
               >
                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
               </svg>
             </div>
-            <h1 className="login-title">Учет стоков бара</h1>
-            <p className="login-subtitle">Войдите в систему</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Учет стоков бара</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Войдите в систему</p>
           </div>
 
           {/* Форма входа */}
-          <form onSubmit={handleSubmit} className="login-form">
-            {/* Поле Email */}
-            <div className="form-group">
-              <label htmlFor="email" className="form-label">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="form-input"
-                placeholder="example@email.com"
-                autoComplete="email"
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Поле Пароль */}
-            <div className="form-group">
-              <label htmlFor="password" className="form-label">
-                Пароль
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="form-input"
-                placeholder="Введите пароль"
-                autoComplete="current-password"
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Сообщение об ошибке */}
-            {error && (
-              <div className="error-message">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="error-icon"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="15" y1="9" x2="9" y2="15" />
-                  <line x1="9" y1="9" x2="15" y2="15" />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Кнопка входа */}
-            <button
-              type="submit"
-              className="login-button"
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <Input
+              label="Email"
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              autoComplete="email"
               disabled={isLoading}
+            />
+
+            <Input
+              label="Пароль"
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Введите пароль"
+              autoComplete="current-password"
+              disabled={isLoading}
+              error={error}
+            />
+
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full mt-2"
+              loading={isLoading}
             >
-              {isLoading ? (
-                <>
-                  <span className="spinner"></span>
-                  Вход...
-                </>
-              ) : (
-                'Войти'
-              )}
-            </button>
+              Войти
+            </Button>
           </form>
         </div>
       </div>
