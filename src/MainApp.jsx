@@ -15,6 +15,7 @@ import NumberEditModal from './components/NumberEditModal'
 import ProductList from './ProductList'
 import Button from './components/ui/Button'
 import AddModal from './components/AddModal'
+import Card from './components/ui/Card'
 
 // Импорт утилит
 import { parseNumber } from './utils/format'
@@ -648,7 +649,7 @@ const saveToSupabase = useCallback(async () => {
 
       {/* Основной контент */}
       <main className="p-4 md:p-6">
-        <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-soft transition-colors">
+        <Card className="max-w-7xl mx-auto">
           {/* Уведомления */}
           <Notification
             message={notification.message}
@@ -731,7 +732,7 @@ const saveToSupabase = useCallback(async () => {
               Экспорт CSV
             </Button>
           </div>
-        </div>
+        </Card>
       </main>
 
       {/* Модальные окна */}
