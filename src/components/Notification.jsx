@@ -21,6 +21,7 @@
  */
 
 import React, { useEffect, useState } from 'react'
+import Button from './ui/Button'
 
 /**
  * Компонент уведомлений
@@ -159,22 +160,23 @@ const Notification = ({ message, type, onClose }) => {
         {/* ============================================================ */}
         {/* КНОПКА ЗАКРЫТИЯ */}
         {/* ============================================================ */}
-        <button
+        <Button
           onClick={handleClose}
+          variant="ghost"
+          size="sm"
           className="
             flex-shrink-0
             text-white opacity-70 hover:opacity-100
-            transition-opacity duration-200
             text-xl leading-none
-            w-6 h-6
-            flex items-center justify-center
+            w-6 h-6 p-0
             rounded-full
             hover:bg-white/20
+            shadow-none
           "
           aria-label="Закрыть уведомление"
         >
           ×
-        </button>
+        </Button>
       </div>
 
       {/* ============================================================ */}

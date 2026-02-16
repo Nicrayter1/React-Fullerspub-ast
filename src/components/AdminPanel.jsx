@@ -42,6 +42,10 @@ import AdminProductList from './AdminProductList'
 import Notification from './Notification'
 import AddModal from './AddModal'
 import FlagModal from './FlagModal'
+import Button from './ui/Button'
+import Input from './ui/Input'
+import Select from './ui/Select'
+import Card from './ui/Card'
 
 /**
  * ============================================================
@@ -540,12 +544,13 @@ const AdminPanel = () => {
             </p>
           </div>
           <div>
-            <button
+            <Button
               onClick={() => navigate('/')}
-              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium transition-all"
+              variant="ghost"
+              className="bg-gray-100 dark:bg-gray-700"
             >
               ← Вернуться к приложению
-            </button>
+            </Button>
           </div>
         </div>
       </header>
@@ -553,15 +558,16 @@ const AdminPanel = () => {
       {/* NAVIGATION TABS */}
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="flex border-b border-gray-200 dark:border-gray-700">
-          <button
-            className={`px-6 py-3 text-sm font-medium transition-all border-b-2
+          <Button
+            variant="ghost"
+            className={`px-6 py-3 rounded-none border-b-2 shadow-none
               ${activeTab === 'products'
                 ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                : 'border-transparent text-gray-500'}`}
             onClick={() => setActiveTab('products')}
           >
             📦 Продукты
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -571,10 +577,11 @@ const AdminPanel = () => {
           <div className="animate-slide-up">
             
             {/* НОВОЕ: СЕКЦИЯ СЦЕНАРИЕВ */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-soft border border-gray-100 dark:border-gray-700 mb-8 transition-colors">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+            <Card title={
+              <div className="flex items-center gap-2">
                 <span>⚡</span> Сценарии
-              </h3>
+              </div>
+            } className="mb-8">
               
               {/* Активный сценарий */}
               {activeScenario && (
@@ -594,12 +601,13 @@ const AdminPanel = () => {
                       }
                     </div>
                   </div>
-                  <button 
-                    className="px-4 py-2 bg-white dark:bg-gray-700 text-primary dark:text-primary-dark rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all active:scale-95"
+                  <Button
+                    variant="ghost"
+                    className="bg-white dark:bg-gray-700 text-primary dark:text-primary-dark"
                     onClick={handleStopScenarios}
                   >
                     ⏹️ Остановить
-                  </button>
+                  </Button>
                 </div>
               )}
               
@@ -617,16 +625,14 @@ const AdminPanel = () => {
                   <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
                     {flagsStats?.red || 0} позиций
                   </div>
-                  <button
-                    className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all
-                      ${activeScenario === 'stocks'
-                        ? 'bg-red-100 text-red-600 cursor-default'
-                        : 'bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95'}`}
+                  <Button
+                    variant={activeScenario === 'stocks' ? 'ghost' : 'error'}
+                    className={`w-full ${activeScenario === 'stocks' ? 'bg-red-100 text-red-600' : ''}`}
                     onClick={() => handleRunScenario('stocks')}
                     disabled={activeScenario === 'stocks'}
                   >
                     {activeScenario === 'stocks' ? '✓ Активен' : '▶ Запустить'}
-                  </button>
+                  </Button>
                 </div>
                 
                 {/* РЕВИЗИЯ */}
@@ -641,16 +647,14 @@ const AdminPanel = () => {
                   <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
                     {flagsStats?.green || 0} позиций
                   </div>
-                  <button
-                    className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all
-                      ${activeScenario === 'revision'
-                        ? 'bg-green-100 text-green-600 cursor-default'
-                        : 'bg-green-600 hover:bg-green-700 text-white shadow-md active:scale-95'}`}
+                  <Button
+                    variant={activeScenario === 'revision' ? 'ghost' : 'success'}
+                    className={`w-full ${activeScenario === 'revision' ? 'bg-green-100 text-green-600' : ''}`}
                     onClick={() => handleRunScenario('revision')}
                     disabled={activeScenario === 'revision'}
                   >
                     {activeScenario === 'revision' ? '✓ Активен' : '▶ Запустить'}
-                  </button>
+                  </Button>
                 </div>
                 
                 {/* ДОЛГАЯ ЗАМОРОЗКА */}
@@ -665,55 +669,45 @@ const AdminPanel = () => {
                   <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
                     {flagsStats?.yellow || 0} позиций
                   </div>
-                  <button
-                    className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all
-                      ${activeScenario === 'long_freeze'
-                        ? 'bg-amber-100 text-amber-600 cursor-default'
-                        : 'bg-amber-500 hover:bg-amber-600 text-white shadow-md active:scale-95'}`}
+                  <Button
+                    variant={activeScenario === 'long_freeze' ? 'ghost' : 'warning'}
+                    className={`w-full ${activeScenario === 'long_freeze' ? 'bg-amber-100 text-amber-600' : ''}`}
                     onClick={() => handleRunScenario('long_freeze')}
                     disabled={activeScenario === 'long_freeze'}
                   >
                     {activeScenario === 'long_freeze' ? '✓ Активен' : '▶ Запустить'}
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* FILTERS AND SEARCH */}
             <div className="flex flex-wrap items-end gap-4 mb-8 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 transition-colors">
               {/* Категории */}
-              <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Категория:</label>
-                <select
-                  value={selectedCategory?.id || ''}
-                  onChange={(e) => {
-                    const catId = e.target.value
-                    setSelectedCategory(
-                      catId ? categories.find(c => c.id === parseInt(catId)) : null
-                    )
-                  }}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                >
-                  <option value="">Все категории</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Категория:"
+                className="flex-1 min-w-[200px]"
+                value={selectedCategory?.id || ''}
+                onChange={(e) => {
+                  const catId = e.target.value
+                  setSelectedCategory(
+                    catId ? categories.find(c => c.id === parseInt(catId)) : null
+                  )
+                }}
+                options={[
+                  { value: '', label: 'Все категории' },
+                  ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+                ]}
+              />
 
               {/* Поиск */}
-              <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Поиск:</label>
-                <input
-                  type="text"
-                  placeholder="Название или объем..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                />
-              </div>
+              <Input
+                label="Поиск:"
+                className="flex-1 min-w-[200px]"
+                placeholder="Название или объем..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
 
               {/* Фильтры статуса */}
               <div className="flex flex-col gap-1.5">
@@ -741,32 +735,35 @@ const AdminPanel = () => {
               </div>
 
               {/* Кнопка обновления */}
-              <div className="flex-shrink-0">
-                <button
+              <div className="flex-shrink-0 mb-1.5">
+                <Button
                   onClick={loadData}
-                  className="h-[38px] px-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-all flex items-center gap-2 active:scale-95"
+                  variant="ghost"
+                  className="h-[38px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600"
                 >
                   🔄 Обновить
-                </button>
+                </Button>
               </div>
 
               {/* Кнопки добавления */}
-              <div className="flex-shrink-0">
-                <button
+              <div className="flex-shrink-0 mb-1.5">
+                <Button
                   onClick={() => setAddModal({ isOpen: true, type: 'product' })}
-                  className="h-[38px] px-4 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95 flex items-center gap-2"
+                  variant="primary"
+                  className="h-[38px]"
                 >
                   ➕ Добавить продукт
-                </button>
+                </Button>
               </div>
 
-              <div className="flex-shrink-0">
-                <button
+              <div className="flex-shrink-0 mb-1.5">
+                <Button
                   onClick={() => setAddModal({ isOpen: true, type: 'category' })}
-                  className="h-[38px] px-4 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95 flex items-center gap-2"
+                  variant="secondary"
+                  className="h-[38px] bg-gray-600 hover:bg-gray-700"
                 >
                   ➕ Добавить категорию
-                </button>
+                </Button>
               </div>
             </div>
 

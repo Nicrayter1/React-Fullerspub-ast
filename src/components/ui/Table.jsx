@@ -3,7 +3,7 @@ import React from 'react'
 /**
  * Универсальный компонент таблицы
  */
-const Table = ({ columns, data, onRowClick, compact = false, className = '' }) => {
+const Table = ({ columns, data, onRowClick, onCellClick, compact = false, className = '' }) => {
   return (
     <div className={`w-full overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 transition-colors ${className}`}>
       <table className="w-full border-collapse table-auto text-sm">
@@ -30,7 +30,13 @@ const Table = ({ columns, data, onRowClick, compact = false, className = '' }) =
               {columns.map((col, colIdx) => (
                 <td
                   key={colIdx}
-                  className={`p-3 text-gray-700 dark:text-gray-300 ${compact ? 'py-1.5' : ''} ${col.cellClassName || ''}`}
+                  className={`p-3 text-gray-700 dark:text-gray-300 ${compact ? 'py-1.5' : ''} ${onCellClick ? 'cursor-pointer' : ''} ${col.cellClassName || ''}`}
+                  onClick={(e) => {
+                    if (onCellClick) {
+                      e.stopPropagation()
+                      onCellClick(row, col.key || colIdx)
+                    }
+                  }}
                 >
                   {col.render ? col.render(row) : row[col.key]}
                 </td>

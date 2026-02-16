@@ -3,6 +3,10 @@
  */
 
 import React, { useState, useEffect } from 'react'
+import Modal from './ui/Modal'
+import Button from './ui/Button'
+import Input from './ui/Input'
+import Select from './ui/Select'
 
 const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
   // Для категории
@@ -71,112 +75,73 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
     if (e.key === 'Escape') onClose()
   }
 
-  if (!isOpen) return null
+  const actions = (
+    <>
+      <Button variant="ghost" className="flex-1 bg-gray-100 dark:bg-gray-700" onClick={onClose}>
+        Отмена
+      </Button>
+      <Button variant="primary" className="flex-1" onClick={handleAdd}>
+        Добавить
+      </Button>
+    </>
+  )
 
   return (
-    <div 
-      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-fade-in"
-      onClick={onClose}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={type === 'category' ? '📁 Добавить категорию' : '📦 Добавить продукт'}
+      actions={actions}
     >
-      <div 
-        className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-heavy animate-slide-up transition-colors"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Заголовок */}
-        <h3 className="text-center font-bold text-gray-900 dark:text-gray-100 mb-6">
-          {type === 'category' ? '📁 Добавить категорию' : '📦 Добавить продукт'}
-        </h3>
-
+      <div className="flex flex-col gap-4">
         {/* ФОРМА ДЛЯ КАТЕГОРИИ */}
         {type === 'category' && (
-          <div className="flex flex-col gap-1.5 mb-4">
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
-              Название категории
-            </label>
-            <input
-              type="text"
-              value={categoryName}
-              onChange={(e) => setCategoryName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Например: Пиво"
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-primary transition-all"
-              autoFocus
-            />
-          </div>
+          <Input
+            label="Название категории"
+            type="text"
+            value={categoryName}
+            onChange={(e) => setCategoryName(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Например: Пиво"
+            autoFocus
+          />
         )}
 
         {/* ФОРМА ДЛЯ ПРОДУКТА */}
         {type === 'product' && (
-          <div className="flex flex-col gap-4">
-            {/* Выбор категории */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
-                Категория
-              </label>
-              <select
-                value={selectedCategoryId}
-                onChange={(e) => setSelectedCategoryId(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-primary transition-all"
-              >
-                <option value="">Выберите категорию</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <>
+            <Select
+              label="Категория"
+              value={selectedCategoryId}
+              onChange={(e) => setSelectedCategoryId(e.target.value)}
+              onKeyDown={handleKeyDown}
+              options={[
+                { value: '', label: 'Выберите категорию' },
+                ...categories.map((cat) => ({ value: cat.id, label: cat.name }))
+              ]}
+            />
 
-            {/* Название продукта */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
-                Название продукта
-              </label>
-              <input
-                type="text"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Например: Guinness"
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-primary transition-all"
-              />
-            </div>
+            <Input
+              label="Название продукта"
+              type="text"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Например: Guinness"
+            />
 
-            {/* Объем */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
-                Объем тары
-              </label>
-              <input
-                type="text"
-                value={productVolume}
-                onChange={(e) => setProductVolume(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Например: 500 мл"
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-primary transition-all"
-              />
-            </div>
-          </div>
+            <Input
+              label="Объем тары"
+              type="text"
+              value={productVolume}
+              onChange={(e) => setProductVolume(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Например: 500 мл"
+            />
+          </>
         )}
-
-        {/* Кнопки */}
-        <div className="flex gap-3 mt-8">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
-          >
-            Отмена
-          </button>
-          <button
-            onClick={handleAdd}
-            className="flex-1 py-3 bg-primary text-white rounded-xl text-sm font-bold shadow-md hover:bg-primary-hover transition-all active:scale-95"
-          >
-            Добавить
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 

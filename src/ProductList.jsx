@@ -1,5 +1,6 @@
 import React from 'react'
 import { formatNumber } from './utils/format'
+import Button from './components/ui/Button'
 
 // ============================================
 // КОНФИГУРАЦИЯ КОЛОНОК
@@ -236,13 +237,14 @@ function ProductList({ products, searchQuery, categoryId, availableColumns, onEd
                     {/* Значения для каждого склада */}
                     {activeColumns.map(col => (
                       <td key={col} className="p-1 sm:p-2 border-b border-gray-100 dark:border-gray-700/50 text-center overflow-visible">
-                        <button
+                        <Button
                           onClick={() => onEdit(product, col)}
-                          className="inline-flex items-center justify-center w-full min-h-[34px] sm:min-h-[38px] md:min-h-[44px] px-1 py-1 text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm cursor-pointer transition-all hover:border-primary dark:hover:border-primary hover:text-primary dark:hover:text-primary-dark active:scale-[0.97]"
+                          variant="ghost"
+                          className="w-full min-h-[34px] sm:min-h-[38px] md:min-h-[44px] px-1 py-1 text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm"
                           title={`Изменить ${COLUMN_CONFIG[col].label}: ${product.name}`}
                         >
                           {formatNumber(product[col])}
-                        </button>
+                        </Button>
                       </td>
                     ))}
                   </tr>

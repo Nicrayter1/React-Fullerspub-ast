@@ -21,6 +21,8 @@
  */
 
 import React, { useState } from 'react'
+import Button from './ui/Button'
+import Badge from './ui/Badge'
 
 /**
  * ============================================================
@@ -63,7 +65,7 @@ const ProductRow = ({
         <div className="flex items-center gap-2">
           {product.name}
           {product.is_frozen && (
-            <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded" title="Продукт заморожен">❄️</span>
+            <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-none">❄️ Заморожен</Badge>
           )}
         </div>
       </td>
@@ -87,9 +89,11 @@ const ProductRow = ({
         <div className="flex items-center justify-end gap-1 sm:gap-2">
           
           {/* Flag Button */}
-          <button
+          <Button
             onClick={() => onOpenFlagModal(product)}
-            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all"
+            variant="ghost"
+            size="sm"
+            className="w-8 h-8 sm:w-10 sm:h-10 p-0 bg-gray-100 dark:bg-gray-700"
             title="Управление флагами"
           >
             <div className="flex gap-0.5 scale-75 sm:scale-100">
@@ -100,35 +104,41 @@ const ProductRow = ({
                 <span className="opacity-30">⚪</span>
               )}
             </div>
-          </button>
+          </Button>
 
           {/* Freeze/Unfreeze Button */}
           {!product.is_frozen ? (
-            <button
+            <Button
               onClick={() => onFreeze(product.id)}
-              className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg transition-all active:scale-95"
+              variant="ghost"
+              size="sm"
+              className="w-8 h-8 sm:w-10 sm:h-10 p-0 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
               title="Заморозить продукт"
             >
               ❄️
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               onClick={() => onUnfreeze(product.id)}
-              className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50 text-orange-600 dark:text-orange-400 rounded-lg transition-all active:scale-95"
+              variant="ghost"
+              size="sm"
+              className="w-8 h-8 sm:w-10 sm:h-10 p-0 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
               title="Разморозить продукт"
             >
               🔥
-            </button>
+            </Button>
           )}
 
           {/* Delete Button */}
-          <button
+          <Button
             onClick={() => onDelete(product.id, product.name)}
-            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-all active:scale-95"
+            variant="ghost"
+            size="sm"
+            className="w-8 h-8 sm:w-10 sm:h-10 p-0 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
             title="Удалить продукт"
           >
             🗑️
-          </button>
+          </Button>
         </div>
       </td>
     </tr>
