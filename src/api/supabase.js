@@ -22,6 +22,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { bulkUpdateProducts } from './bulkOperations'
+import { delay } from '../utils/helpers'
 
 // ============================================================
 // КОНФИГУРАЦИЯ SUPABASE
@@ -60,15 +61,6 @@ export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
  * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
  * ============================================================
  */
-
-/**
- * Функция задержки для retry механизма
- * Используется для повторных попыток при сетевых ошибках
- * 
- * @param {number} ms - Время задержки в миллисекундах
- * @returns {Promise} Promise который резолвится через указанное время
- */
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
  * ============================================================

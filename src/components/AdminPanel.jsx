@@ -280,7 +280,7 @@ const AdminPanel = () => {
     try {
       console.log(`🗑️ Удаление продукта ${productId}`)
       
-      const result = await deleteProduct(productId, productName, userProfile.email)
+      const result = await deleteProduct(productId, userProfile.email)
 
       if (result.success) {
         showNotification(`Продукт "${productName}" удален`, 'success')
