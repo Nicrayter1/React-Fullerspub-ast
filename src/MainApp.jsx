@@ -55,6 +55,13 @@ function MainApp() {
   // Доступные колонки для текущего пользователя
   const availableColumns = getAvailableColumns()
 
+  // === АВТО-СИНХРОНИЗАЦИЯ LOCALSTORAGE ===
+  useEffect(() => {
+    if (categories.length > 0 || products.length > 0) {
+      localStorage.setItem('barStockData', JSON.stringify({ categories, products }))
+    }
+  }, [categories, products])
+
   // === УВЕДОМЛЕНИЯ ===
 
   const showNotification = useCallback((message, type = 'info') => {
@@ -68,14 +75,16 @@ function MainApp() {
       const saved = localStorage.getItem('barStockData')
       if (saved) {
         const data = JSON.parse(saved)
-        setCategories(data.categories || [])
-        setProducts(data.products || [])
-        return true
+        const cats = data.categories || []
+        const prods = data.products || []
+        setCategories(cats)
+        setProducts(prods)
+        return { categories: cats, products: prods }
       }
     } catch (error) {
       console.error('Ошибка загрузки из localStorage:', error)
     }
-    return false
+    return null
   }, [])
 
   /**
@@ -83,20 +92,12 @@ function MainApp() {
    * @param {boolean} showNotif - Показывать ли уведомление (по умолчанию false)
    */
   const saveToLocalStorage = useCallback((showNotif = false) => {
-    try {
-      localStorage.setItem('barStockData', JSON.stringify({ categories, products }))
-      
-      // Показываем уведомление только если явно запрошено
-      if (showNotif) {
-        showNotification('✅ Данные сохранены локально!', 'success')
-      }
-      
-      return true
-    } catch (error) {
-      showNotification('Ошибка сохранения: ' + error.message, 'error')
-      return false
+    // Показываем уведомление только если явно запрошено
+    if (showNotif) {
+      showNotification('✅ Данные сохранены локально!', 'success')
     }
-  }, [categories, products, showNotification])
+    return true
+  }, [showNotification])
 
   // === РАБОТА С SUPABASE ===
 
@@ -156,14 +157,6 @@ function MainApp() {
       // ============================================================
       setCategories(cats)
       setProducts(enrichedProducts)
-
-      // ============================================================
-      // СОХРАНЕНИЕ В LOCALSTORAGE КАК BACKUP
-      // ============================================================
-      localStorage.setItem('barStockData', JSON.stringify({
-        categories: cats,
-        products: enrichedProducts
-      }))
 
       // ============================================================
       // УСПЕШНОЕ ЗАВЕРШЕНИЕ
@@ -262,9 +255,6 @@ const saveToSupabase = useCallback(async () => {
         'success'
       )
       
-      // После успешного сохранения обновляем localStorage (тихо)
-      saveToLocalStorage()
-      
     } else if (result.updated > 0) {
       // ============================================================
       // ЧАСТИЧНЫЙ УСПЕХ - Часть продуктов сохранена
@@ -273,9 +263,6 @@ const saveToSupabase = useCallback(async () => {
         `⚠️ Частично сохранено в БД: ${result.updated} из ${result.total} продуктов. ${result.failed} ошибок.`,
         'warning'
       )
-      
-      // Даже при частичном успехе сохраняем в localStorage (тихо)
-      saveToLocalStorage()
       
       // Логируем детали ошибок
       if (result.errors && result.errors.length > 0) {
@@ -336,7 +323,7 @@ const saveToSupabase = useCallback(async () => {
     setLoading(false)
     console.log('🏁 Сохранение завершено, loading = false')
   }
-}, [products, showNotification, saveToLocalStorage])
+}, [products, showNotification])
 
   /**
    * Синхронизация с Supabase (загрузка свежих данных)
@@ -361,9 +348,10 @@ const saveToSupabase = useCallback(async () => {
       console.log('🚀 Инициализация приложения...')
       
       // Пробуем загрузить из localStorage
-      const hasLocalData = loadFromLocalStorage()
+      const localData = loadFromLocalStorage()
+      const hasData = localData && localData.products.length > 0
       
-      if (!hasLocalData || products.length === 0) {
+      if (!hasData) {
         console.log('📥 Локальных данных нет, загружаем из Supabase...')
         // Если нет локальных данных, загружаем из Supabase
         if (supabaseAPI.client) {
@@ -480,16 +468,6 @@ const saveToSupabase = useCallback(async () => {
           // Добавляем новую категорию в массив categories
           setCategories(prev => [...prev, newCategory])
           
-          // ============================================================
-          // СОХРАНЕНИЕ В LOCALSTORAGE
-          // ============================================================
-          // Обновляем localStorage чтобы данные сохранились
-          const updatedCategories = [...categories, newCategory]
-          localStorage.setItem('barStockData', JSON.stringify({
-            categories: updatedCategories,
-            products
-          }))
-          
           // Показываем успешное уведомление
           showNotification(`Категория "${category}" добавлена`, 'success')
           
@@ -553,16 +531,6 @@ const saveToSupabase = useCallback(async () => {
         // ============================================================
         // Добавляем новый продукт в массив products
         setProducts(prev => [...prev, enrichedProduct])
-        
-        // ============================================================
-        // СОХРАНЕНИЕ В LOCALSTORAGE
-        // ============================================================
-        // Обновляем localStorage чтобы данные сохранились
-        const updatedProducts = [...products, enrichedProduct]
-        localStorage.setItem('barStockData', JSON.stringify({
-          categories,
-          products: updatedProducts
-        }))
         
         // Показываем успешное уведомление
         showNotification(`Продукт "${name}" добавлен`, 'success')

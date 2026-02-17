@@ -20,6 +20,7 @@
  */
 
 import { supabaseClient } from './supabase'
+import { delay } from '../utils/helpers'
 
 /**
  * ============================================================
@@ -43,12 +44,6 @@ const RPC_TIMEOUT = 30000
  * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
  * ============================================================
  */
-
-/**
- * Задержка выполнения
- * @param {number} ms - Миллисекунды
- */
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
  * Проверка, является ли ошибка CORS ошибкой
