@@ -85,8 +85,8 @@ function _buildAndDownload(products, categories, filename) {
       ]
     })
 
-    const csv = ['\uFEFF' + headers.join(';'), ...rows.map(r => r.join(';'))].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
     
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
@@ -123,7 +123,7 @@ export function exportFrozenToCSV(products, categories, filename = 'заморо
  * Экспорт активных продуктов (алиас для exportToCSV)
  */
 export function exportActiveToCSV(products, categories, filename = 'активные') {
-  return exportToCSV(products, categories, filename)
+  return _buildAndDownload(products.filter(p => !p.is_frozen), categories, filename)
 }
 
 /**

@@ -89,15 +89,20 @@ function MainApp() {
 
   /**
    * Сохранение в localStorage
-   * @param {boolean} showNotif - Показывать ли уведомление (по умолчанию false)
+   * 
    */
-  const saveToLocalStorage = useCallback((showNotif = false) => {
-    // Показываем уведомление только если явно запрошено
+const saveToLocalStorage = useCallback((showNotif = false) => {
+  try {
+    localStorage.setItem('barStockData', JSON.stringify({ categories, products }))
     if (showNotif) {
       showNotification('✅ Данные сохранены локально!', 'success')
     }
     return true
-  }, [showNotification])
+  } catch (error) {
+    showNotification('Ошибка сохранения: ' + error.message, 'error')
+    return false
+  }
+}, [categories, products, showNotification])
 
   // === РАБОТА С SUPABASE ===
 
