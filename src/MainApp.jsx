@@ -91,7 +91,7 @@ function MainApp() {
    * Сохранение в localStorage
    * 
    */
-const saveToLocalStorage = useCallback((showNotif = false) => {
+  const saveToLocalStorage = useCallback((showNotif = false) => {
   try {
     localStorage.setItem('barStockData', JSON.stringify({ categories, products }))
     if (showNotif) {
