@@ -46,6 +46,7 @@ import Button from './ui/Button'
 import Input from './ui/Input'
 import Select from './ui/Select'
 import Card from './ui/Card'
+import ParLevelManager from './ParLevelManager'
 
 /**
  * ============================================================
@@ -68,7 +69,7 @@ const AdminPanel = () => {
   // UI состояния
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('products') // 'products' | 'history'
+  const [activeTab, setActiveTab] = useState('products') // 'products' | 'orders'
   const [notification, setNotification] = useState(null)
 
   // Фильтры
@@ -568,6 +569,16 @@ const AdminPanel = () => {
           >
             📦 Продукты
           </Button>
+          <Button
+            variant="ghost"
+            className={`px-6 py-3 rounded-none border-b-2 shadow-none
+              ${activeTab === 'orders'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500'}`}
+            onClick={() => setActiveTab('orders')}
+          >
+            📋 Нормативы и заказ
+          </Button>
         </div>
       </div>
 
@@ -787,6 +798,12 @@ const AdminPanel = () => {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'orders' && (
+          <div className="animate-slide-up">
+            <ParLevelManager />
           </div>
         )}
       </div>
