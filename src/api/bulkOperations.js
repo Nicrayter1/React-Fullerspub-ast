@@ -151,20 +151,22 @@ function validateProduct(product) {
   return true
 }
 
+// Все возможные колонки остатков
+const STOCK_COLUMNS = ['bar1', 'bar2', 'cold_room']
+
 /**
- * Подготовка данных для RPC функции
- * @param {Array} products - Массив продуктов
- * @returns {Array}
+ * Подготовка данных — только колонки из availableColumns
  */
-function prepareProductData(products) {
+function prepareProductData(products, availableColumns) {
+  const columns = STOCK_COLUMNS.filter(col => availableColumns.includes(col))
+
   return products
     .filter(validateProduct)
-    .map(product => ({
-      id: product.id,
-      bar1: product.bar1 ?? 0,
-      bar2: product.bar2 ?? 0,
-      cold_room: product.cold_room ?? 0
-    }))
+    .map(product => {
+      const entry = { id: product.id }
+      columns.forEach(col => { entry[col] = product[col] ?? 0 })
+      return entry
+    })
 }
 
 /**
@@ -287,19 +289,16 @@ async function executeRPCWithRetry(batch, batchIndex, totalBatches, attemptNumbe
  * @param {Array} products - Массив продуктов
  * @returns {Promise<Object>}
  */
-export async function bulkUpdateProducts(products) {
-  // ============================================================
-  // ВАЛИДАЦИЯ ВХОДНЫХ ДАННЫХ
-  // ============================================================
-  
+export async function bulkUpdateProducts(products, availableColumns) {
   if (!products || !Array.isArray(products)) {
-    const error = new Error('Некорректные данные: ожидается массив продуктов')
-    console.error('❌', error.message)
-    throw error
+    throw new Error('Некорректные данные: ожидается массив продуктов')
   }
-  
+
+  if (!availableColumns || availableColumns.length === 0) {
+    throw new Error('availableColumns не переданы — сохранение заблокировано')
+  }
+
   if (products.length === 0) {
-    console.log('⚠️ Пустой массив продуктов')
     return {
       success: true,
       total: 0,
@@ -310,16 +309,11 @@ export async function bulkUpdateProducts(products) {
       userMessage: 'Нет данных для сохранения'
     }
   }
-  
-  // ============================================================
-  // ПОДГОТОВКА ДАННЫХ
-  // ============================================================
-  
+
   const startTime = performance.now()
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log(`🔄 Начало массового обновления ${products.length} продуктов...`)
-  
-  const preparedProducts = prepareProductData(products)
+  console.log(`🔄 Обновление ${products.length} продуктов, колонки: [${availableColumns}]`)
+
+  const preparedProducts = prepareProductData(products, availableColumns)
   
   if (preparedProducts.length === 0) {
     const error = new Error('Все продукты не прошли валидацию')
@@ -404,17 +398,7 @@ export async function bulkUpdateProducts(products) {
   const duration = performance.now() - startTime
   const success = results.failed === 0 && !criticalError
   
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log(`${success ? '✅' : '⚠️'} Массовое обновление завершено`)
-  console.log(`📊 Статистика:`)
-  console.log(`   • Всего: ${results.total}`)
-  console.log(`   • Успешно: ${results.updated}`)
-  console.log(`   • Ошибок: ${results.failed}`)
-  console.log(`   • Время: ${Math.round(duration)}мс`)
-  if (results.updated > 0) {
-    console.log(`   • Скорость: ${Math.round(results.updated / (duration / 1000))} продуктов/сек`)
-  }
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log(`${success ? '✅' : '⚠️'} Готово: ${results.updated}/${results.total} за ${Math.round(duration)}мс`)
   
   if (results.errors.length > 0) {
     console.error('❌ Детали ошибок:', results.errors)

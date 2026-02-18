@@ -372,7 +372,7 @@ class SupabaseAPI {
    *   hasCORSErrors: boolean   // Были ли CORS ошибки
    * }
    */
-  async syncAll(products) {
+  async syncAll(products, availableColumns) {
     // ============================================================
     // ВАЛИДАЦИЯ ВХОДНЫХ ДАННЫХ
     // ============================================================
@@ -406,7 +406,7 @@ class SupabaseAPI {
     try {
       // Вызываем функцию массового обновления из модуля bulkOperations
       // Она использует PostgreSQL функцию bulk_update_products
-      const result = await bulkUpdateProducts(products)
+      const result = await bulkUpdateProducts(products, availableColumns)
       
       // ============================================================
       // АНАЛИЗ РЕЗУЛЬТАТА

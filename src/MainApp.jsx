@@ -221,9 +221,11 @@ function MainApp() {
  */
 
 const saveToSupabase = useCallback(async () => {
-  // ============================================================
-  // ВАЛИДАЦИЯ - Проверка что есть данные
-  // ============================================================
+  if (!availableColumns || availableColumns.length === 0) {
+    showNotification('Ошибка: не определены доступные колонки', 'error')
+    return
+  }
+
   if (!products || products.length === 0) {
     showNotification('Нет данных для сохранения', 'warning')
     return
@@ -243,7 +245,7 @@ const saveToSupabase = useCallback(async () => {
     // ============================================================
     // ВЫЗОВ API - Массовое обновление
     // ============================================================
-    const result = await supabaseAPI.syncAll(products)
+    const result = await supabaseAPI.syncAll(products, availableColumns)
     
     console.log('✅ Результат сохранения:', result)
     
@@ -328,7 +330,7 @@ const saveToSupabase = useCallback(async () => {
     setLoading(false)
     console.log('🏁 Сохранение завершено, loading = false')
   }
-}, [products, showNotification])
+}, [products, availableColumns, showNotification])
 
   /**
    * Синхронизация с Supabase (загрузка свежих данных)
@@ -728,4 +730,4 @@ const saveToSupabase = useCallback(async () => {
   )
 }
 
-export default MainApp
+export default MainApp 
