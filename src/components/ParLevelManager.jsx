@@ -119,7 +119,19 @@ export default function ParLevelManager() {
     .filter(p => filterStatus === 'all' || p.status === filterStatus)
     .filter(p => !search || p.name?.toLowerCase().includes(search.toLowerCase()))
 
-  const grouped = groupBy(filtered, 'category_name')
+  // Группируем и сортируем категории по category_order из View
+  const grouped = (() => {
+    const map = groupBy(filtered, 'category_name')
+    // Каждая группа содержит items — берём category_order первого элемента
+    const sorted = new Map(
+      [...map.entries()].sort(([, aItems], [, bItems]) => {
+        const aOrder = aItems[0]?.category_order ?? 9999
+        const bOrder = bItems[0]?.category_order ?? 9999
+        return aOrder - bOrder
+      })
+    )
+    return sorted
+  })()
   const changesCount = Object.keys(edited).length
 
   return (
@@ -250,7 +262,7 @@ export default function ParLevelManager() {
                   const isEdited = !!edited[item.id]
                   const parVal   = e.total_par   !== undefined ? e.total_par   : (item.total_par ?? '')
                   const compVal  = e.company     !== undefined ? e.company     : (item.company || '')
-                  const distrVal = e.distributor !== undefined ? e.distributor : (item.distributor || '')
+                  const distrVal = e.distributor !== undefined ? e.distributor : (item.distributor_text || '')
 
                   return (
                     <tr

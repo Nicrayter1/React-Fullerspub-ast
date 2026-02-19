@@ -157,6 +157,13 @@ const AdminPanel = () => {
     loadData()
   }, [])
 
+  // Если запущен сценарий "Ревизия" — переключиться с вкладки заказа
+  useEffect(() => {
+    if (activeScenario === 'revision' && activeTab === 'orders') {
+      setActiveTab('products')
+    }
+  }, [activeScenario, activeTab])
+
   // ============================================================
   // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
   // ============================================================
@@ -570,16 +577,18 @@ const AdminPanel = () => {
           >
             📦 Продукты
           </Button>
-          <Button
-            variant="ghost"
-            className={`px-6 py-3 rounded-none border-b-2 shadow-none
-              ${activeTab === 'orders'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500'}`}
-            onClick={() => setActiveTab('orders')}
-          >
-            📋 Нормативы и заказ
-          </Button>
+          {activeScenario !== 'revision' && (
+            <Button
+              variant="ghost"
+              className={`px-6 py-3 rounded-none border-b-2 shadow-none
+                ${activeTab === 'orders'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500'}`}
+              onClick={() => setActiveTab('orders')}
+            >
+              📋 Нормативы и заказ
+            </Button>
+          )}
           <Button
             variant="ghost"
             className={`px-6 py-3 rounded-none border-b-2 shadow-none
