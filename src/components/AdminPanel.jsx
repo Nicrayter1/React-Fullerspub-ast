@@ -24,7 +24,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../AuthContext'
 import { useNavigate } from 'react-router-dom'
-import supabaseAPI from '../api/supabase'
+import supabaseAPI, { supabaseClient } from '../api/supabase'
 import {
   freezeProduct,
   unfreezeProduct,
