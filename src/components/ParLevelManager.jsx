@@ -250,7 +250,7 @@ export default function ParLevelManager() {
                   const isEdited = !!edited[item.id]
                   const parVal   = e.total_par   !== undefined ? e.total_par   : (item.total_par ?? '')
                   const compVal  = e.company     !== undefined ? e.company     : (item.company || '')
-                  const distrVal = e.distributor !== undefined ? e.distributor : (item.distributor_text || '')
+                  const distrVal = e.distributor !== undefined ? e.distributor : (item.distributor || '')
 
                   return (
                     <tr
