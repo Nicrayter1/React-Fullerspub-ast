@@ -124,16 +124,46 @@ const AdminPanel = () => {
   /**
    * Загрузить категории и продукты из базы данных
    */
+  /**
+   * Определяет активный сценарий из базы данных.
+   * Логика: если есть замороженные продукты — смотрим какой флаг
+   * объединяет все НЕзамороженные продукты.
+   */
+  const detectActiveScenario = async () => {
+    try {
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select('is_frozen, red_flag, green_flag, yellow_flag')
+      if (error || !data) return null
+
+      const hasFrozen = data.some(p => p.is_frozen)
+      if (!hasFrozen) return null  // ничего не заморожено → нет активного сценария
+
+      const active = data.filter(p => !p.is_frozen)
+      if (active.length === 0) return null
+
+      // Если все незамороженные имеют один и тот же флаг — это и есть активный сценарий
+      if (active.every(p => p.red_flag))    return 'stocks'
+      if (active.every(p => p.green_flag))  return 'revision'
+      if (active.every(p => p.yellow_flag)) return 'long_freeze'
+
+      return null
+    } catch {
+      return null
+    }
+  }
+
   const loadData = async () => {
     try {
       setLoading(true)
       console.log('📦 Загрузка данных для админ-панели...')
 
-      // Параллельная загрузка категорий, продуктов и статистики
-      const [categoriesData, productsData, statsResult] = await Promise.all([
+      // Параллельная загрузка категорий, продуктов, статистики и активного сценария
+      const [categoriesData, productsData, statsResult, detectedScenario] = await Promise.all([
         supabaseAPI.fetchCategories(),
         supabaseAPI.fetchProducts(),
-        getFlagsStatistics()
+        getFlagsStatistics(),
+        detectActiveScenario()
       ])
 
       setCategories(categoriesData)
@@ -142,8 +172,14 @@ const AdminPanel = () => {
       if (statsResult.success) {
         setFlagsStats(statsResult.stats)
       }
+
+      // Восстанавливаем активный сценарий из базы
+      setActiveScenario(detectedScenario)
       
       console.log(`✅ Загружено: ${categoriesData.length} категорий, ${productsData.length} продуктов`)
+      if (detectedScenario) {
+        console.log(`🎬 Обнаружен активный сценарий: ${detectedScenario}`)
+      }
 
     } catch (error) {
       console.error('❌ Ошибка загрузки данных:', error)
