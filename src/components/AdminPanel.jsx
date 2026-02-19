@@ -47,6 +47,7 @@ import Input from './ui/Input'
 import Select from './ui/Select'
 import Card from './ui/Card'
 import ParLevelManager from './ParLevelManager'
+import DistributorManager from './DistributorManager'
 
 /**
  * ============================================================
@@ -69,7 +70,7 @@ const AdminPanel = () => {
   // UI состояния
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('products') // 'products' | 'orders'
+  const [activeTab, setActiveTab] = useState('products') // 'products' | 'orders' | 'distributors'
   const [notification, setNotification] = useState(null)
 
   // Фильтры
@@ -579,6 +580,16 @@ const AdminPanel = () => {
           >
             📋 Нормативы и заказ
           </Button>
+          <Button
+            variant="ghost"
+            className={`px-6 py-3 rounded-none border-b-2 shadow-none
+              ${activeTab === 'distributors'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500'}`}
+            onClick={() => setActiveTab('distributors')}
+          >
+            🚚 Дистрибьюторы
+          </Button>
         </div>
       </div>
 
@@ -804,6 +815,12 @@ const AdminPanel = () => {
         {activeTab === 'orders' && (
           <div className="animate-slide-up">
             <ParLevelManager />
+          </div>
+        )}
+
+        {activeTab === 'distributors' && (
+          <div className="animate-slide-up">
+            <DistributorManager />
           </div>
         )}
       </div>
