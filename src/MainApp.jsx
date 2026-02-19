@@ -152,10 +152,14 @@ function MainApp() {
       // ОБОГАЩЕНИЕ ДАННЫХ
       // ============================================================
       // Добавляем название категории к каждому продукту
-      const enrichedProducts = prods.map(product => ({
-        ...product,
-        category_name: cats.find(c => c.id === product.category_id)?.name || 'Без категории'
-      }))
+      const enrichedProducts = prods.map(product => {
+        const cat = cats.find(c => c.id === product.category_id)
+        return {
+          ...product,
+          category_name:        cat?.name       || 'Без категории',
+          category_order_index: cat?.order_index ?? 99999
+        }
+      })
       
       // ============================================================
       // ОБНОВЛЕНИЕ СОСТОЯНИЯ
@@ -730,4 +734,4 @@ const saveToSupabase = useCallback(async () => {
   )
 }
 
-export default MainApp 
+export default MainApp
