@@ -145,14 +145,11 @@ function ProductList({ products, searchQuery, categoryId, availableColumns, onEd
    * Это гарантирует что категории идут в правильном порядке
    */
   const sortedCategories = Object.keys(groupedProducts).sort((catA, catB) => {
-    const productsA = groupedProducts[catA]
-    const productsB = groupedProducts[catB]
-    
-    // Находим минимальный order_index в каждой категории
-    const minOrderA = Math.min(...productsA.map(p => p.order_index || p.id))
-    const minOrderB = Math.min(...productsB.map(p => p.order_index || p.id))
-    
-    return minOrderA - minOrderB
+    // Берём category_order_index из первого продукта категории
+    // (все продукты одной категории имеют одинаковый category_order_index)
+    const orderA = groupedProducts[catA][0]?.category_order_index ?? 99999
+    const orderB = groupedProducts[catB][0]?.category_order_index ?? 99999
+    return orderA - orderB
   })
 
   // ============================================
