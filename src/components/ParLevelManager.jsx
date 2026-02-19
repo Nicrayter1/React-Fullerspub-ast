@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { fetchOrderSummary, upsertParLevelsBulk, updateProductMeta } from '../api/parLevels'
 import Button from './ui/Button'
+import OrderModal from './OrderModal'
 
 // ─── Цвета строк (как в Excel) ───────────────────────────────────────────────
 const ROW_BG = {
@@ -51,6 +52,7 @@ export default function ParLevelManager() {
   const [search, setSearch]           = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [notif, setNotif]             = useState(null)
+  const [showOrder, setShowOrder]     = useState(false)
 
   const notify = (msg, type = 'info') => {
     setNotif({ msg, type })
@@ -174,6 +176,13 @@ export default function ParLevelManager() {
         </Button>
         <Button onClick={load} variant="ghost" disabled={loading}>
           {loading ? '...' : '↻ Обновить'}
+        </Button>
+        <Button
+          onClick={() => setShowOrder(true)}
+          variant="success"
+          disabled={stats.order === 0}
+        >
+          📦 Сформировать заказ ({stats.order})
         </Button>
         {filterStatus !== 'all' && (
           <button
@@ -316,6 +325,12 @@ export default function ParLevelManager() {
           </tbody>
         </table>
       </div>
+
+      <OrderModal
+        isOpen={showOrder}
+        onClose={() => setShowOrder(false)}
+        orderSummary={summary}
+      />
     </div>
   )
 }
