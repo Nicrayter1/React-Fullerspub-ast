@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { fetchOrderSummary, upsertParLevelsBulk, updateProductMeta } from '../api/parLevels'
+import { fetchDistributors, linkProductToDistributor } from '../api/distributors'
 import Button from './ui/Button'
 import OrderModal from './OrderModal'
 
@@ -17,7 +18,7 @@ const orderQtyColor = (status) => {
   return 'text-gray-700 dark:text-gray-300'
 }
 
-// Маленький inline-инпут
+// Маленький inline-инпут (текст/число)
 const TdInput = ({ value, onChange, type = 'text', width = 'w-20', placeholder = '—' }) => (
   <input
     type={type}
@@ -34,6 +35,26 @@ const TdInput = ({ value, onChange, type = 'text', width = 'w-20', placeholder =
   />
 )
 
+// Выпадающий список дистрибьюторов
+const TdSelect = ({ value, onChange, distributors }) => (
+  <select
+    value={value ?? ''}
+    onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+    className="
+      w-32 px-1 py-0.5 text-xs
+      bg-white/70 dark:bg-gray-700/70
+      border border-gray-300 dark:border-gray-600
+      rounded focus:outline-none focus:border-blue-400
+      cursor-pointer
+    "
+  >
+    <option value="">— не указан —</option>
+    {distributors.map(d => (
+      <option key={d.id} value={d.id}>{d.name}</option>
+    ))}
+  </select>
+)
+
 function groupBy(arr, key) {
   const map = new Map()
   arr.forEach(item => {
@@ -45,14 +66,15 @@ function groupBy(arr, key) {
 }
 
 export default function ParLevelManager() {
-  const [summary, setSummary]         = useState([])
-  const [edited, setEdited]           = useState({})
-  const [loading, setLoading]         = useState(false)
-  const [saving, setSaving]           = useState(false)
-  const [search, setSearch]           = useState('')
+  const [summary, setSummary]           = useState([])
+  const [distributors, setDistributors] = useState([])
+  const [edited, setEdited]             = useState({})
+  const [loading, setLoading]           = useState(false)
+  const [saving, setSaving]             = useState(false)
+  const [search, setSearch]             = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [notif, setNotif]             = useState(null)
-  const [showOrder, setShowOrder]     = useState(false)
+  const [notif, setNotif]               = useState(null)
+  const [showOrder, setShowOrder]       = useState(false)
 
   const notify = (msg, type = 'info') => {
     setNotif({ msg, type })
@@ -62,7 +84,13 @@ export default function ParLevelManager() {
   const load = useCallback(async () => {
     try {
       setLoading(true)
-      setSummary(await fetchOrderSummary())
+      // Загружаем данные и справочник дистрибьюторов параллельно
+      const [summaryData, distributorsData] = await Promise.all([
+        fetchOrderSummary(),
+        fetchDistributors()
+      ])
+      setSummary(summaryData)
+      setDistributors(distributorsData)
     } catch (err) {
       notify('Ошибка загрузки: ' + err.message, 'error')
     } finally {
@@ -80,21 +108,35 @@ export default function ParLevelManager() {
     if (!ids.length) { notify('Нет изменений', 'info'); return }
     try {
       setSaving(true)
-      const parUpdates  = []
-      const metaUpdates = []
+      const parUpdates          = []
+      const metaUpdates         = []
+      const distributorUpdates  = []
 
       ids.forEach(id => {
         const f = edited[id]
+
+        // Нормативы → par_levels
         if (f.total_par !== undefined)
           parUpdates.push({ product_id: Number(id), total_par: Number(f.total_par) || 0 })
-        if (f.company !== undefined || f.distributor !== undefined)
-          metaUpdates.push({ id: Number(id), company: f.company, distributor: f.distributor })
+
+        // Компания → products.company
+        if (f.company !== undefined)
+          metaUpdates.push({ id: Number(id), company: f.company })
+
+        // Дистрибьютор → products.distributor_id (FK, не текст)
+        if (f.distributor_id !== undefined)
+          distributorUpdates.push({ id: Number(id), distributor_id: f.distributor_id })
       })
 
       await Promise.all([
-        parUpdates.length ? upsertParLevelsBulk(parUpdates) : Promise.resolve(),
-        ...metaUpdates.map(({ id, company, distributor }) =>
-          updateProductMeta(id, { company, distributor })
+        parUpdates.length
+          ? upsertParLevelsBulk(parUpdates)
+          : Promise.resolve(),
+        ...metaUpdates.map(({ id, company }) =>
+          updateProductMeta(id, { company })
+        ),
+        ...distributorUpdates.map(({ id, distributor_id }) =>
+          linkProductToDistributor(id, distributor_id)
         )
       ])
 
@@ -119,10 +161,8 @@ export default function ParLevelManager() {
     .filter(p => filterStatus === 'all' || p.status === filterStatus)
     .filter(p => !search || p.name?.toLowerCase().includes(search.toLowerCase()))
 
-  // Группируем и сортируем категории по category_order из View
   const grouped = (() => {
     const map = groupBy(filtered, 'category_name')
-    // Каждая группа содержит items — берём category_order первого элемента
     const sorted = new Map(
       [...map.entries()].sort(([, aItems], [, bItems]) => {
         const aOrder = aItems[0]?.category_order ?? 9999
@@ -132,6 +172,7 @@ export default function ParLevelManager() {
     )
     return sorted
   })()
+
   const changesCount = Object.keys(edited).length
 
   return (
@@ -205,7 +246,7 @@ export default function ParLevelManager() {
           </button>
         )}
         <span className="ml-auto text-xs text-gray-400 italic">
-          Колонка «итого сток» — редактируемая. Остальные — только чтение.
+          Колонки «итого сток», «компания», «дистрибьютор» — редактируемые.
         </span>
       </div>
 
@@ -222,7 +263,7 @@ export default function ParLevelManager() {
               <th colSpan={2} className="border border-blue-700 px-2 py-1 font-bold">итого</th>
               <th rowSpan={2} className="border border-blue-700 px-2 py-2 font-bold">заказ</th>
               <th rowSpan={2} className="border border-blue-700 px-2 py-2 font-bold">компания</th>
-              <th rowSpan={2} className="border border-blue-700 px-2 py-2 font-bold">дистрибьютор</th>
+              <th rowSpan={2} className="border border-blue-700 px-2 py-2 font-bold">дистрибьютор ✎</th>
             </tr>
             <tr className="bg-blue-800 text-white text-center">
               <th className="border border-blue-700 px-2 py-1 font-medium text-blue-200">сток</th>
@@ -260,9 +301,10 @@ export default function ParLevelManager() {
                 {items.map(item => {
                   const e        = edited[item.id] || {}
                   const isEdited = !!edited[item.id]
-                  const parVal   = e.total_par   !== undefined ? e.total_par   : (item.total_par ?? '')
-                  const compVal  = e.company     !== undefined ? e.company     : (item.company || '')
-                  const distrVal = e.distributor !== undefined ? e.distributor : (item.distributor_text || '')
+                  const parVal   = e.total_par      !== undefined ? e.total_par      : (item.total_par ?? '')
+                  const compVal  = e.company        !== undefined ? e.company        : (item.company || '')
+                  // distributor_id: из edited если менялся, иначе из View (item.distributor_id)
+                  const distrId  = e.distributor_id !== undefined ? e.distributor_id : (item.distributor_id ?? null)
 
                   return (
                     <tr
@@ -325,9 +367,13 @@ export default function ParLevelManager() {
                         <TdInput value={compVal} onChange={v => handleChange(item.id, 'company', v)} placeholder="—" width="w-24" />
                       </td>
 
-                      {/* Дистрибьютор */}
+                      {/* Дистрибьютор — выпадающий список из справочника */}
                       <td className="px-1 py-1">
-                        <TdInput value={distrVal} onChange={v => handleChange(item.id, 'distributor', v)} placeholder="—" width="w-28" />
+                        <TdSelect
+                          value={distrId}
+                          onChange={v => handleChange(item.id, 'distributor_id', v)}
+                          distributors={distributors}
+                        />
                       </td>
                     </tr>
                   )
