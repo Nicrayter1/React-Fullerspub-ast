@@ -60,10 +60,10 @@ export async function fetchOrderSummary() {
 /**
  * Обновление company/distributor/unit у продукта
  */
-export async function updateProductMeta(productId, { company, distributor, unit }) {
+export async function updateProductMeta(productId, { company, distributor, unit, volume }) {
   const { data, error } = await supabaseClient
     .from('products')
-    .update({ company, distributor, unit })
+    .update({ company, distributor, unit, volume })
     .eq('id', productId)
     .select()
     .single()
