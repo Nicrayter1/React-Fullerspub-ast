@@ -55,6 +55,25 @@ const TdSelect = ({ value, onChange, distributors }) => (
   </select>
 )
 
+// Дропдаун единицы измерения
+const UNITS = ['шт', 'л', 'кг', 'пачка', 'кор', 'мл']
+
+const TdUnitSelect = ({ value, onChange }) => (
+  <select
+    value={value || 'шт'}
+    onChange={e => onChange(e.target.value)}
+    className="
+      w-16 px-1 py-0.5 text-xs text-center
+      bg-white/70 dark:bg-gray-700/70
+      border border-gray-300 dark:border-gray-600
+      rounded focus:outline-none focus:border-blue-400
+      cursor-pointer
+    "
+  >
+    {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+  </select>
+)
+
 function groupBy(arr, key) {
   const map = new Map()
   arr.forEach(item => {
@@ -119,9 +138,9 @@ export default function ParLevelManager() {
         if (f.total_par !== undefined)
           parUpdates.push({ product_id: Number(id), total_par: Number(f.total_par) || 0 })
 
-        // Компания → products.company
-        if (f.company !== undefined)
-          metaUpdates.push({ id: Number(id), company: f.company })
+        // Компания и единица измерения → products
+        if (f.company !== undefined || f.unit !== undefined)
+          metaUpdates.push({ id: Number(id), company: f.company, unit: f.unit })
 
         // Дистрибьютор → products.distributor_id (FK, не текст)
         if (f.distributor_id !== undefined)
@@ -132,8 +151,8 @@ export default function ParLevelManager() {
         parUpdates.length
           ? upsertParLevelsBulk(parUpdates)
           : Promise.resolve(),
-        ...metaUpdates.map(({ id, company }) =>
-          updateProductMeta(id, { company })
+        ...metaUpdates.map(({ id, company, unit }) =>
+          updateProductMeta(id, { company, unit })
         ),
         ...distributorUpdates.map(({ id, distributor_id }) =>
           linkProductToDistributor(id, distributor_id)
@@ -256,7 +275,8 @@ export default function ParLevelManager() {
           <thead>
             <tr className="bg-blue-900 text-white text-center">
               <th rowSpan={2} className="border border-blue-700 px-3 py-2 text-left font-bold min-w-[180px]">наименование</th>
-              <th rowSpan={2} className="border border-blue-700 px-2 py-2 font-bold whitespace-nowrap">тара, мл</th>
+              <th rowSpan={2} className="border border-blue-700 px-2 py-2 font-bold whitespace-nowrap">тара</th>
+              <th rowSpan={2} className="border border-blue-700 px-2 py-2 font-bold whitespace-nowrap">ед. ✎</th>
               <th colSpan={2} className="border border-blue-700 px-2 py-1 font-bold">бар 1 зал</th>
               <th colSpan={2} className="border border-blue-700 px-2 py-1 font-bold">бар 2</th>
               <th colSpan={2} className="border border-blue-700 px-2 py-1 font-bold">бочковая</th>
@@ -279,7 +299,7 @@ export default function ParLevelManager() {
           <tbody>
             {grouped.size === 0 && (
               <tr>
-                <td colSpan={13} className="text-center py-10 text-gray-400">
+                <td colSpan={14} className="text-center py-10 text-gray-400">
                   {loading ? 'Загрузка...' : 'Нет данных'}
                 </td>
               </tr>
@@ -289,7 +309,7 @@ export default function ParLevelManager() {
                 {/* Строка категории */}
                 <tr>
                   <td
-                    colSpan={13}
+                    colSpan={14}
                     className="bg-yellow-300 dark:bg-yellow-600 text-gray-900
                       font-bold text-center py-1.5 px-3
                       border border-yellow-400 uppercase tracking-wide"
@@ -303,6 +323,7 @@ export default function ParLevelManager() {
                   const isEdited = !!edited[item.id]
                   const parVal   = e.total_par      !== undefined ? e.total_par      : (item.total_par ?? '')
                   const compVal  = e.company        !== undefined ? e.company        : (item.company || '')
+                  const unitVal  = e.unit           !== undefined ? e.unit           : (item.unit || 'шт')
                   // distributor_id: из edited если менялся, иначе из View (item.distributor_id)
                   const distrId  = e.distributor_id !== undefined ? e.distributor_id : (item.distributor_id ?? null)
 
@@ -321,6 +342,14 @@ export default function ParLevelManager() {
                       </td>
                       <td className="px-2 py-1.5 text-center border-r border-gray-200 dark:border-gray-700 tabular-nums whitespace-nowrap">
                         {item.volume}
+                      </td>
+
+                      {/* Единица измерения */}
+                      <td className="px-1 py-1 border-r border-gray-200 dark:border-gray-700 text-center bg-yellow-50/50 dark:bg-yellow-900/10">
+                        <TdUnitSelect
+                          value={unitVal}
+                          onChange={v => handleChange(item.id, 'unit', v)}
+                        />
                       </td>
 
                       {/* Бар 1 */}
