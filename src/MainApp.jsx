@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { Save, Upload, Download, RefreshCw, LogOut, User, Settings } from 'lucide-react'
-import { useAuth } from './AuthContext'
+import { useAuth } from './AuthContt'
 import { useNavigate } from 'react-router-dom'
 
 // Импорт компонентов
@@ -443,18 +443,16 @@ const saveToSupabase = useCallback(async () => {
     // ============================================================
     // ПОИСК КАТЕГОРИИ
     // ============================================================
-    // Ищем объект категории по названию (case-insensitive)
-    const categoryObj = categories.find(c =>
-      c.name.toLowerCase() === category.toLowerCase()
-    )
+    // category уже является числовым ID (передаётся из AddModal как parseInt)
+    const categoryObj = categories.find(c => c.id === category)
 
     // ============================================================
     // ДОБАВЛЕНИЕ КАТЕГОРИИ
     // ============================================================
     if (addModal.type === 'category') {
-      // Проверяем не существует ли уже такая категория
+      // Проверяем не существует ли уже такая категория (по имени, переданному в поле name)
       const exists = categories.some(c =>
-        c.name.toLowerCase() === category.toLowerCase()
+        c.name.toLowerCase() === name.toLowerCase()
       )
       
       if (!exists) {
@@ -564,7 +562,7 @@ const saveToSupabase = useCallback(async () => {
   }
 
   const handleExport = () => {
-    exportToCSV(products)
+    exportToCSV(gitproducts, categories)
     showNotification('CSV файл скачивается...', 'success')
   }
 
