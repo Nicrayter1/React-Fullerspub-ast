@@ -77,6 +77,51 @@ class SupabaseAPI {
 
   /**
    * ============================================================
+   * ПОЛУЧИТЬ СЛЕДУЮЩИЙ order_index
+   * ============================================================
+   *
+   * Запрашивает MAX(order_index) из таблицы и возвращает MAX + 1.
+   * Это единственный надёжный способ: не зависит от того,
+   * сколько элементов сейчас в массиве на клиенте.
+   *
+   * Проблема length+1:
+   *   Было 5 категорий (1,2,3,4,5) → удалили 4 и 5 → length = 3
+   *   Новая категория: order_index = 3+1 = 4
+   *   Ещё одна:        order_index = 3+1 = 4  ← дубликат! Сортировка сломана.
+   *
+   * Решение MAX+1:
+   *   MAX в базе = 3 → следующий = 4 ✅
+   *   Снова MAX  = 4 → следующий = 5 ✅
+   *
+   * @param {'products'|'categories'} table - Таблица
+   * @param {number|null} categoryId - Только для products: считает индекс
+   *                                   внутри категории, а не глобально
+   * @returns {Promise<number>} Следующий order_index
+   */
+  async getNextOrderIndex(table, categoryId = null) {
+    let query = this.client
+      .from(table)
+      .select('order_index')
+      .order('order_index', { ascending: false })
+      .limit(1)
+
+    if (table === 'products' && categoryId !== null) {
+      query = query.eq('category_id', categoryId)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error(`❌ Ошибка получения max order_index (${table}):`, error)
+      return 9999
+    }
+
+    const maxIndex = data?.[0]?.order_index ?? 0
+    return maxIndex + 1
+  }
+
+  /**
+   * ============================================================
    * ЗАГРУЗКА КАТЕГОРИЙ
    * ============================================================
    * 
@@ -168,45 +213,43 @@ class SupabaseAPI {
    * @throws {Error} Выбрасывает ошибку если создание не удалось
    */
   async insertProduct(productData) {
-    // Проверка инициализации клиента
     if (!this.client) {
       throw new Error('Supabase клиент не инициализирован')
     }
 
     console.log('➕ Создание нового продукта:', productData.name)
-    
+
     try {
-      // Выполняем INSERT в таблицу products
-      // .select() - получаем созданную запись с ID
-      // .single() - ожидаем один объект вместо массива
+      // Считаем order_index прямо из базы: MAX по этой категории + 1
+      // Это защищает от дубликатов при удалениях (см. getNextOrderIndex)
+      const orderIndex = await this.getNextOrderIndex('products', productData.category_id)
+
       const { data, error } = await this.client
         .from('products')
         .insert([{
           category_id: productData.category_id,
           name: productData.name,
           volume: productData.volume,
-          bar1: productData.bar1 || 0,           // Дефолт 0 если не указано
-          bar2: productData.bar2 || 0,           // Дефолт 0 если не указано
-          cold_room: productData.cold_room || 0, // Дефолт 0 если не указано
-          order_index: productData.order_index || null,
-          is_frozen: false,                      // По умолчанию не заморожен
-          visible_to_bar1: true,                 // Видим для бара 1
-          visible_to_bar2: true                  // Видим для бара 2
+          bar1: productData.bar1 ?? 0,
+          bar2: productData.bar2 ?? 0,
+          cold_room: productData.cold_room ?? 0,
+          order_index: orderIndex,
+          is_frozen: false,
+          visible_to_bar1: true,
+          visible_to_bar2: true
         }])
         .select()
         .single()
 
-      // Проверка на ошибки
       if (error) {
         console.error('❌ Ошибка создания продукта:', error)
         throw error
       }
-      
-      console.log('✅ Продукт создан с ID:', data.id)
+
+      console.log('✅ Продукт создан с ID:', data.id, '| order_index:', orderIndex)
       return data
-      
+
     } catch (error) {
-      // Логируем критическую ошибку
       console.error('❌ Критическая ошибка вставки продукта:', error)
       throw error
     }
@@ -229,37 +272,35 @@ class SupabaseAPI {
    * @throws {Error} Выбрасывает ошибку если создание не удалось
    */
   async insertCategory(categoryData) {
-    // Проверка инициализации клиента
     if (!this.client) {
       throw new Error('Supabase клиент не инициализирован')
     }
 
     console.log('➕ Создание новой категории:', categoryData.name)
-    
+
     try {
-      // Выполняем INSERT в таблицу categories
-      // .select() - получаем созданную запись с ID
-      // .single() - ожидаем один объект вместо массива
+      // Считаем order_index прямо из базы: MAX по всем категориям + 1
+      // Это защищает от дубликатов при удалениях (см. getNextOrderIndex)
+      const orderIndex = await this.getNextOrderIndex('categories')
+
       const { data, error } = await this.client
         .from('categories')
         .insert([{
           name: categoryData.name,
-          order_index: categoryData.order_index
+          order_index: orderIndex
         }])
         .select()
         .single()
 
-      // Проверка на ошибки
       if (error) {
         console.error('❌ Ошибка создания категории:', error)
         throw error
       }
-      
-      console.log('✅ Категория создана с ID:', data.id)
+
+      console.log('✅ Категория создана с ID:', data.id, '| order_index:', orderIndex)
       return data
-      
+
     } catch (error) {
-      // Логируем критическую ошибку
       console.error('❌ Критическая ошибка вставки категории:', error)
       throw error
     }
@@ -489,28 +530,6 @@ class SupabaseAPI {
     }
   }
 
-  /**
-   * ============================================================
-   * ЗАГРУЗКА ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ (УСТАРЕЛ)
-   * ============================================================
-   * 
-   * @deprecated Этот метод устарел
-   * Роль пользователя теперь определяется по email в AuthContext
-   * Оставлено для обратной совместимости
-   * 
-   * @param {string} userId - UUID пользователя
-   * @returns {Promise<Object>} Заглушка профиля пользователя
-   */
-  async fetchUserProfile(userId) {
-    console.warn('⚠️ fetchUserProfile устарел. Роль определяется по email в AuthContext')
-    
-    // Возвращаем заглушку чтобы не ломать старый код
-    return {
-      id: userId,
-      role: 'bar1',
-      email: 'unknown@local'
-    }
-  }
 }
 
 /**

@@ -469,8 +469,7 @@ const saveToSupabase = useCallback(async () => {
           // Вызываем метод insertCategory из supabaseAPI
           // PostgreSQL автоматически сгенерирует ID через SERIAL
           const newCategory = await supabaseAPI.insertCategory({
-            name: category,
-            order_index: categories.length + 1
+            name: category
           })
           
           // ============================================================
@@ -524,8 +523,7 @@ const saveToSupabase = useCallback(async () => {
           volume,
           bar1: 0,
           bar2: 0,
-          cold_room: 0,
-          order_index: products.length + 1
+          cold_room: 0
         })
         
         // ============================================================

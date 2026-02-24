@@ -373,8 +373,7 @@ const AdminPanel = () => {
         console.log('➕ Добавление категории:', name)
         
         const newCategory = await supabaseAPI.insertCategory({
-          name: name,
-          order_index: categories.length + 1
+          name: name
         })
         
         if (newCategory) {
@@ -395,8 +394,7 @@ const AdminPanel = () => {
           volume,
           bar1: 0,
           bar2: 0,
-          cold_room: 0,
-          order_index: products.length + 1
+          cold_room: 0
         })
         
         if (newProduct) {
