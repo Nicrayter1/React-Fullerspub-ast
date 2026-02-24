@@ -112,48 +112,6 @@ export function exportToCSV(products, categories = [], filename = 'стоки_б
   return _buildAndDownload(products.filter(p => !p.is_frozen), categories, filename)
 }
 
-/**
- * Экспорт только замороженных продуктов
- */
-export function exportFrozenToCSV(products, categories, filename = 'замороженные') {
-  return _buildAndDownload(products.filter(p => p.is_frozen), categories, filename)
-}
-
-/**
- * Экспорт активных продуктов (алиас для exportToCSV)
- */
-export function exportActiveToCSV(products, categories, filename = 'активные') {
-  return _buildAndDownload(products.filter(p => !p.is_frozen), categories, filename)
-}
-
-/**
- * Экспорт конкретной категории
- */
-export function exportCategoryToCSV(products, categoryId, categories, filename) {
-  const cat = categories.find(c => c.id === categoryId)
-  return _buildAndDownload(
-    products.filter(p => p.category_id === categoryId && !p.is_frozen),
-    categories,
-    `${filename}_${cat?.name || 'category'}`
-  )
-}
-
-/**
- * Экспорт видимых для конкретного бара продуктов
- */
-export function exportBarVisibleProducts(products, barName, categories, filename) {
-  const visibilityField = `visible_to_${barName}`
-  return _buildAndDownload(
-    products.filter(p => p[visibilityField] === true && !p.is_frozen),
-    categories,
-    `${filename}_${barName}`
-  )
-}
-
 export default {
-  exportToCSV,
-  exportCategoryToCSV,
-  exportFrozenToCSV,
-  exportActiveToCSV,
-  exportBarVisibleProducts
+  exportToCSV
 }

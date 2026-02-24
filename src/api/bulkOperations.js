@@ -6,12 +6,6 @@
  * Версия: 2.0.0 - ИСПРАВЛЕНО
  * Дата обновления: 2026-01-31
  * 
- * ИСПРАВЛЕНИЯ v2.0:
- * ✅ Добавлена обработка CORS ошибок
- * ✅ Retry механизм с экспоненциальной задержкой
- * ✅ Обнаружение конфликтов при конкурентном доступе
- * ✅ Детальные сообщения об ошибках для пользователя
- * ✅ Валидация ответа от сервера
  * 
  * @version 2.0.0
  * @author Migration Team
@@ -451,18 +445,6 @@ export async function bulkUpdateProducts(products, availableColumns) {
  * ============================================================
  */
 
-export async function bulkInsertProducts(products) {
-  console.warn('⚠️ bulkInsertProducts еще не реализован')
-  throw new Error('Not implemented yet')
-}
-
-export async function bulkDeleteProducts(productIds) {
-  console.warn('⚠️ bulkDeleteProducts еще не реализован')
-  throw new Error('Not implemented yet')
-}
-
 export default {
-  bulkUpdateProducts,
-  bulkInsertProducts,
-  bulkDeleteProducts
+  bulkUpdateProducts
 }
