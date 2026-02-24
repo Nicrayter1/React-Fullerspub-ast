@@ -9,14 +9,14 @@
  * 
  * ФУНКЦИИ:
  * - Отображение продуктов в темной теме
- * - Drag & drop для изменения порядка
+ * - Drag & drop для изменения порядка (только внутри категории)
  * - Действия: заморозка, разморозка, удаление
  * - Индикаторы статуса (заморожен/активен)
- * - НОВОЕ: Управление флагами через кнопку 🏴
+ * - Управление флагами через кнопку 🏴
  * 
- * @version 3.0.0
+ * @version 3.1.0
  * @author Admin Team
- * @date 2026-02-12
+ * @date 2026-02-24
  * ============================================================
  */
 
@@ -32,7 +32,9 @@ import Badge from './ui/Badge'
 const ProductRow = ({
   product,
   index,
+  categoryName,
   isDragging,
+  isForbiddenTarget,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -48,16 +50,23 @@ const ProductRow = ({
         transition-colors border-b border-gray-100 dark:border-gray-700/50
         ${isDragging ? 'bg-primary/5 opacity-50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'}
         ${product.is_frozen ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
+        ${isForbiddenTarget ? 'bg-red-50/30 dark:bg-red-900/10' : ''}
       `}
+      style={{ cursor: isForbiddenTarget ? 'not-allowed' : undefined }}
       draggable={true}
-      onDragStart={(e) => onDragStart(e, index)}
+      onDragStart={(e) => onDragStart(e, index, categoryName)}
       onDragEnd={onDragEnd}
-      onDragOver={(e) => onDragOver(e, index)}
-      onDrop={(e) => onDrop(e, index)}
+      onDragOver={(e) => onDragOver(e, index, categoryName)}
+      onDrop={(e) => onDrop(e, index, categoryName)}
     >
       {/* Drag Handle */}
       <td className="p-2 sm:p-3 text-center w-10 sm:w-12">
-        <span className="cursor-move text-gray-400 dark:text-gray-600 text-lg sm:text-xl select-none" title="Перетащите для изменения порядка">⋮⋮</span>
+        <span
+          className="cursor-move text-gray-400 dark:text-gray-600 text-lg sm:text-xl select-none"
+          title="Перетащите для изменения порядка"
+        >
+          ⋮⋮
+        </span>
       </td>
 
       {/* Product Name */}
@@ -65,7 +74,9 @@ const ProductRow = ({
         <div className="flex items-center gap-2">
           {product.name}
           {product.is_frozen && (
-            <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-none">❄️ Заморожен</Badge>
+            <Badge variant="info" className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-none">
+              ❄️ Заморожен
+            </Badge>
           )}
         </div>
       </td>
@@ -87,7 +98,7 @@ const ProductRow = ({
       {/* Actions */}
       <td className="p-2 sm:p-3">
         <div className="flex items-center justify-end gap-1 sm:gap-2">
-          
+
           {/* Flag Button */}
           <Button
             onClick={() => onOpenFlagModal(product)}
@@ -157,14 +168,16 @@ const AdminProductList = ({
   onUnfreeze,
   onDelete,
   onReorder,
-  onOpenFlagModal  // НОВОЕ: prop для открытия модалки флагов
+  onOpenFlagModal
 }) => {
   // ============================================================
   // STATE
   // ============================================================
-  
+
   const [localProducts, setLocalProducts] = useState(products)
   const [draggedIndex, setDraggedIndex] = useState(null)
+  const [draggedCategory, setDraggedCategory] = useState(null)
+  const [hoveredIndex, setHoveredIndex] = useState(null)
 
   // Обновляем локальное состояние когда меняются products из props
   React.useEffect(() => {
@@ -174,79 +187,67 @@ const AdminProductList = ({
   // ============================================================
   // DRAG & DROP HANDLERS
   // ============================================================
-  
-  /**
-   * Начало перетаскивания
-   */
-  const handleDragStart = (e, index) => {
+
+  const handleDragStart = (e, index, categoryName) => {
     setDraggedIndex(index)
+    setDraggedCategory(categoryName)
     e.dataTransfer.effectAllowed = 'move'
   }
 
-  /**
-   * Конец перетаскивания
-   */
   const handleDragEnd = () => {
     setDraggedIndex(null)
+    setDraggedCategory(null)
+    setHoveredIndex(null)
   }
 
-  /**
-   * Перетаскивание над элементом
-   */
-  const handleDragOver = (e, index) => {
+  const handleDragOver = (e, index, categoryName) => {
     e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
 
-    if (draggedIndex === null || draggedIndex === index) {
+    if (draggedIndex === null || draggedIndex === index) return
+
+    // Запрещаем перетаскивание между категориями
+    if (categoryName !== draggedCategory) {
+      e.dataTransfer.dropEffect = 'none'
+      setHoveredIndex(index)
       return
     }
 
-    // Создаем копию массива
+    e.dataTransfer.dropEffect = 'move'
+    setHoveredIndex(null)
+
     const items = [...localProducts]
     const draggedItem = items[draggedIndex]
-
-    // Удаляем из старой позиции
     items.splice(draggedIndex, 1)
-    // Вставляем в новую позицию
     items.splice(index, 0, draggedItem)
 
     setLocalProducts(items)
     setDraggedIndex(index)
   }
 
-  /**
-   * Отпускание элемента
-   */
-  const handleDrop = (e, index) => {
+  const handleDrop = (e, index, categoryName) => {
     e.preventDefault()
     e.stopPropagation()
 
-    if (draggedIndex === null) {
-      return
-    }
+    if (draggedIndex === null) return
 
-    // Вызываем колбэк для сохранения в базе данных
+    // Не сохраняем результат межкатегорийного перетаскивания
+    if (categoryName !== draggedCategory) return
+
     onReorder(localProducts)
   }
 
   // ============================================================
   // ГРУППИРОВКА ПО КАТЕГОРИЯМ
   // ============================================================
-  
-  // Группируем продукты по категориям
+
   const groupedProducts = localProducts.reduce((acc, product) => {
-    const categoryId = product.category_id
-    const category = categories.find(c => c.id === categoryId)
+    const category = categories.find(c => c.id === product.category_id)
     const categoryName = category ? category.name : 'Без категории'
-    
-    if (!acc[categoryName]) {
-      acc[categoryName] = []
-    }
+    if (!acc[categoryName]) acc[categoryName] = []
     acc[categoryName].push(product)
     return acc
   }, {})
 
-  // Сортируем категории по order_index
   const sortedCategories = Object.keys(groupedProducts).sort((a, b) => {
     const catA = categories.find(c => c.name === a)
     const catB = categories.find(c => c.name === b)
@@ -256,7 +257,7 @@ const AdminProductList = ({
   // ============================================================
   // СТАТИСТИКА
   // ============================================================
-  
+
   const totalProducts = products.length
   const frozenProducts = products.filter(p => p.is_frozen).length
   const activeProducts = totalProducts - frozenProducts
@@ -264,7 +265,7 @@ const AdminProductList = ({
   // ============================================================
   // RENDER
   // ============================================================
-  
+
   if (products.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-200 dark:border-gray-700 transition-colors">
@@ -311,7 +312,7 @@ const AdminProductList = ({
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
             {sortedCategories.map(categoryName => {
               const categoryProducts = groupedProducts[categoryName]
-              
+
               return (
                 <React.Fragment key={categoryName}>
                   {/* CATEGORY ROW */}
@@ -325,22 +326,32 @@ const AdminProductList = ({
                   </tr>
 
                   {/* PRODUCT ROWS */}
-                  {categoryProducts.map((product, index) => (
-                    <ProductRow
-                      key={product.id}
-                      product={product}
-                      index={localProducts.indexOf(product)}
-                      isDragging={draggedIndex === localProducts.indexOf(product)}
-                      onDragStart={handleDragStart}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                      onFreeze={onFreeze}
-                      onUnfreeze={onUnfreeze}
-                      onDelete={onDelete}
-                      onOpenFlagModal={onOpenFlagModal}
-                    />
-                  ))}
+                  {categoryProducts.map((product) => {
+                    const flatIndex = localProducts.indexOf(product)
+                    const isForbiddenTarget =
+                      draggedCategory !== null &&
+                      draggedCategory !== categoryName &&
+                      hoveredIndex === flatIndex
+
+                    return (
+                      <ProductRow
+                        key={product.id}
+                        product={product}
+                        index={flatIndex}
+                        categoryName={categoryName}
+                        isDragging={draggedIndex === flatIndex}
+                        isForbiddenTarget={isForbiddenTarget}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        onFreeze={onFreeze}
+                        onUnfreeze={onUnfreeze}
+                        onDelete={onDelete}
+                        onOpenFlagModal={onOpenFlagModal}
+                      />
+                    )
+                  })}
                 </React.Fragment>
               )
             })}
@@ -351,7 +362,7 @@ const AdminProductList = ({
       {/* HELP TEXT */}
       <div className="p-4 bg-gray-50 dark:bg-gray-900/20 border-t border-gray-100 dark:border-gray-700 transition-colors">
         <p className="text-xs text-gray-500 dark:text-gray-400 italic flex items-center gap-2">
-          <span>💡</span> Подсказка: перетащите строки за значок ⋮⋮ для изменения порядка продуктов
+          <span>💡</span> Подсказка: перетащите строки за значок ⋮⋮ для изменения порядка внутри категории
         </p>
       </div>
     </div>
