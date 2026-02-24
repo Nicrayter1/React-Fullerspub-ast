@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { Save, Upload, Download, RefreshCw, LogOut, User, Settings } from 'lucide-react'
-import { useAuth } from './AuthContt'
+import { useAuth } from './AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 // Импорт компонентов
