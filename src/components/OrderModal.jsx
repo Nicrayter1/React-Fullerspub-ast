@@ -2,23 +2,15 @@ import React, { useMemo, useState } from 'react'
 import Modal from './ui/Modal'
 import OrderTemplateEditor, { loadTemplate, buildTextFromTemplate } from './OrderTemplateEditor'
 
-// ─── Генерация wa.me ссылки ───────────────────────────────────────────────────
 function buildWhatsAppLink(whatsapp, text) {
-  const encoded = encodeURIComponent(text)
-  return `https://wa.me/${whatsapp}?text=${encoded}`
+  return `https://wa.me/${whatsapp}?text=${encodeURIComponent(text)}`
 }
 
-// ─── Карточка одного дистрибьютора ───────────────────────────────────────────
 function DistributorCard({ name, whatsapp, items, template }) {
   const [showItems, setShowItems] = useState(false)
   const [copied, setCopied]       = useState(false)
 
   const text = buildTextFromTemplate(template, name, items)
-
-  const handleWhatsApp = () => {
-    if (!whatsapp) return
-    window.open(buildWhatsAppLink(whatsapp, text), '_blank')
-  }
 
   const handleCopy = async () => {
     try {
@@ -32,11 +24,10 @@ function DistributorCard({ name, whatsapp, items, template }) {
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-      {/* Шапка карточки */}
       <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-700/40">
         <div className="flex-1 min-w-0">
           <p className="font-bold text-gray-900 dark:text-gray-100 truncate">{name}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-xs mt-0.5">
             {hasPhone
               ? <span className="text-green-600 dark:text-green-400">+{whatsapp}</span>
               : <span className="text-yellow-600 dark:text-yellow-400">⚠ Номер не указан</span>
@@ -48,11 +39,11 @@ function DistributorCard({ name, whatsapp, items, template }) {
         </span>
       </div>
 
-      {/* Список позиций */}
       <div className="px-4 py-2">
         <button
+          type="button"
           onClick={() => setShowItems(v => !v)}
-          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
+          className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 underline"
         >
           {showItems ? 'Скрыть позиции' : 'Показать позиции'}
         </button>
@@ -70,13 +61,13 @@ function DistributorCard({ name, whatsapp, items, template }) {
         )}
       </div>
 
-      {/* Кнопки */}
       <div className="flex gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-700">
         <button
-          onClick={handleWhatsApp}
+          type="button"
+          onClick={() => hasPhone && window.open(buildWhatsAppLink(whatsapp, text), '_blank')}
           disabled={!hasPhone}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold
-            transition-all ${hasPhone
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold transition-all
+            ${hasPhone
               ? 'bg-green-500 hover:bg-green-600 text-white cursor-pointer'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
             }`}
@@ -87,6 +78,7 @@ function DistributorCard({ name, whatsapp, items, template }) {
           {hasPhone ? 'Открыть в WhatsApp' : 'Нет номера'}
         </button>
         <button
+          type="button"
           onClick={handleCopy}
           className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium
             bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300
@@ -99,23 +91,20 @@ function DistributorCard({ name, whatsapp, items, template }) {
   )
 }
 
-// ─── Основной модал ───────────────────────────────────────────────────────────
 export default function OrderModal({ isOpen, onClose, orderSummary }) {
   const [showEditor, setShowEditor] = useState(false)
-  // Перезагружаем шаблон из localStorage при каждом открытии
-  const [template, setTemplate]     = useState(loadTemplate)
+  const [template, setTemplate]     = useState(() => loadTemplate())
 
-  // При закрытии редактора — перечитать сохранённый шаблон
   const handleCloseEditor = () => {
     setTemplate(loadTemplate())
     setShowEditor(false)
   }
 
   const grouped = useMemo(() => {
-    const toOrder = orderSummary.filter(p => p.status === 'order')
+    const toOrder = (orderSummary || []).filter(p => p.status === 'order')
     const map = new Map()
     toOrder.forEach(item => {
-      const key  = item.distributor_id ?? '__no_distributor__'
+      const key  = item.distributor_id ?? '__none__'
       const name = item.distributor_name || item.distributor_text || 'Без дистрибьютора'
       const wp   = item.distributor_whatsapp || null
       if (!map.has(key)) map.set(key, { name, whatsapp: wp, items: [] })
@@ -124,22 +113,18 @@ export default function OrderModal({ isOpen, onClose, orderSummary }) {
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
   }, [orderSummary])
 
-  const totalItems = grouped.reduce((sum, g) => sum + g.items.length, 0)
+  const totalItems = grouped.reduce((s, g) => s + g.items.length, 0)
   const withPhone  = grouped.filter(g => g.whatsapp).length
   const noPhone    = grouped.length - withPhone
-
-  // Реальные позиции для предпросмотра в редакторе
   const sampleItems = grouped[0]?.items || []
-
-  if (!isOpen) return null
 
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title="📦 Сформировать заказ">
-
-        {/* Кнопка редактора шаблона */}
+        {/* Кнопка редактора */}
         <div className="flex justify-end mb-4">
           <button
+            type="button"
             onClick={() => setShowEditor(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl
               bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300
@@ -152,9 +137,9 @@ export default function OrderModal({ isOpen, onClose, orderSummary }) {
         {/* Статистика */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[
-            { label: 'Дистрибьюторов',    value: grouped.length, color: 'text-blue-600 dark:text-blue-400'  },
-            { label: 'Позиций всего',      value: totalItems,     color: 'text-gray-700 dark:text-gray-200'  },
-            { label: 'Готово к отправке',  value: withPhone,      color: 'text-green-600 dark:text-green-400'},
+            { label: 'Дистрибьюторов',   value: grouped.length, color: 'text-blue-600 dark:text-blue-400'   },
+            { label: 'Позиций всего',     value: totalItems,     color: 'text-gray-700 dark:text-gray-200'   },
+            { label: 'Готово к отправке', value: withPhone,      color: 'text-green-600 dark:text-green-400' },
           ].map(({ label, value, color }) => (
             <div key={label} className="text-center bg-gray-50 dark:bg-gray-700/40 rounded-xl py-3">
               <div className={`text-2xl font-bold tabular-nums ${color}`}>{value}</div>
@@ -186,7 +171,6 @@ export default function OrderModal({ isOpen, onClose, orderSummary }) {
         )}
       </Modal>
 
-      {/* Редактор шаблона — поверх модала */}
       {showEditor && (
         <OrderTemplateEditor
           onClose={handleCloseEditor}
