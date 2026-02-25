@@ -11,11 +11,14 @@ import Select from './ui/Select'
 const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
   // Для категории
   const [categoryName, setCategoryName] = useState('')
-  
+
   // Для продукта
   const [selectedCategoryId, setSelectedCategoryId] = useState('')
   const [productName, setProductName] = useState('')
   const [productVolume, setProductVolume] = useState('')
+
+  // Ошибки валидации
+  const [errors, setErrors] = useState({})
 
   // Сброс полей при открытии
   useEffect(() => {
@@ -24,6 +27,7 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
       setSelectedCategoryId('')
       setProductName('')
       setProductVolume('')
+      setErrors({})
     }
   }, [isOpen])
 
@@ -31,36 +35,43 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
    * Обработка добавления
    */
   const handleAdd = () => {
+    const newErrors = {}
+
     if (type === 'category') {
-      // Добавление категории
       if (!categoryName.trim()) {
-        alert('Пожалуйста, введите название категории')
+        newErrors.categoryName = 'Введите название категории'
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors)
         return
       }
-      
-      // Передаем название категории как name
-      onAdd({ 
+
+      setErrors({})
+      onAdd({
         name: categoryName.trim()
       })
-      
     } else {
-      // Добавление продукта
       if (!selectedCategoryId) {
-        alert('Пожалуйста, выберите категорию')
-        return
+        newErrors.selectedCategoryId = 'Выберите категорию'
       }
       if (!productName.trim()) {
-        alert('Пожалуйста, введите название продукта')
+        newErrors.productName = 'Введите название продукта'
+      }
+      if (!productVolume.trim()) {
+        newErrors.productVolume = 'Введите объем'
+      } else if (parseInt(productVolume) <= 0) {
+        newErrors.productVolume = 'Введите корректный объем'
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors)
         return
       }
-      if (!productVolume || parseInt(productVolume) <= 0) {
-        alert('Пожалуйста, введите корректный объем')
-        return
-      }
-      
-      // Передаем ID категории (number), а не название
+
+      setErrors({})
       onAdd({
-        category: parseInt(selectedCategoryId), // ID категории
+        category: parseInt(selectedCategoryId),
         name: productName.trim(),
         volume: productVolume.trim()
       })
@@ -96,48 +107,68 @@ const AddModal = ({ isOpen, type, categories, onClose, onAdd }) => {
       <div className="flex flex-col gap-4">
         {/* ФОРМА ДЛЯ КАТЕГОРИИ */}
         {type === 'category' && (
-          <Input
-            label="Название категории"
-            type="text"
-            value={categoryName}
-            onChange={(e) => setCategoryName(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Например: Пиво"
-            autoFocus
-          />
+          <div>
+            <Input
+              label="Название категории"
+              type="text"
+              value={categoryName}
+              onChange={(e) => { setCategoryName(e.target.value); setErrors({}) }}
+              onKeyDown={handleKeyDown}
+              placeholder="Например: Пиво"
+              autoFocus
+            />
+            {errors.categoryName && (
+              <p className="mt-1 text-sm text-red-500">{errors.categoryName}</p>
+            )}
+          </div>
         )}
 
         {/* ФОРМА ДЛЯ ПРОДУКТА */}
         {type === 'product' && (
           <>
-            <Select
-              label="Категория"
-              value={selectedCategoryId}
-              onChange={(e) => setSelectedCategoryId(e.target.value)}
-              onKeyDown={handleKeyDown}
-              options={[
-                { value: '', label: 'Выберите категорию' },
-                ...categories.map((cat) => ({ value: cat.id, label: cat.name }))
-              ]}
-            />
+            <div>
+              <Select
+                label="Категория"
+                value={selectedCategoryId}
+                onChange={(e) => { setSelectedCategoryId(e.target.value); setErrors(prev => ({ ...prev, selectedCategoryId: undefined })) }}
+                onKeyDown={handleKeyDown}
+                options={[
+                  { value: '', label: 'Выберите категорию' },
+                  ...categories.map((cat) => ({ value: cat.id, label: cat.name }))
+                ]}
+              />
+              {errors.selectedCategoryId && (
+                <p className="mt-1 text-sm text-red-500">{errors.selectedCategoryId}</p>
+              )}
+            </div>
 
-            <Input
-              label="Название продукта"
-              type="text"
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Например: Guinness"
-            />
+            <div>
+              <Input
+                label="Название продукта"
+                type="text"
+                value={productName}
+                onChange={(e) => { setProductName(e.target.value); setErrors(prev => ({ ...prev, productName: undefined })) }}
+                onKeyDown={handleKeyDown}
+                placeholder="Например: Guinness"
+              />
+              {errors.productName && (
+                <p className="mt-1 text-sm text-red-500">{errors.productName}</p>
+              )}
+            </div>
 
-            <Input
-              label="Объем тары"
-              type="text"
-              value={productVolume}
-              onChange={(e) => setProductVolume(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Например: 500 мл"
-            />
+            <div>
+              <Input
+                label="Объем тары"
+                type="text"
+                value={productVolume}
+                onChange={(e) => { setProductVolume(e.target.value); setErrors(prev => ({ ...prev, productVolume: undefined })) }}
+                onKeyDown={handleKeyDown}
+                placeholder="Например: 500 мл"
+              />
+              {errors.productVolume && (
+                <p className="mt-1 text-sm text-red-500">{errors.productVolume}</p>
+              )}
+            </div>
           </>
         )}
       </div>

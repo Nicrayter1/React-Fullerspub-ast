@@ -15,6 +15,7 @@
 
 import { supabaseClient } from './supabase'
 import { delay } from '../utils/helpers'
+import { log, warn, error, isDev } from '../utils/logger'
 
 /**
  * ============================================================
@@ -123,22 +124,22 @@ function getUserFriendlyErrorMessage(error) {
  */
 function validateProduct(product) {
   if (!product.id) {
-    console.error('❌ Продукт без ID:', product)
+    error('❌ Продукт без ID:', product)
     return false
   }
   
   if (product.bar1 !== undefined && typeof product.bar1 !== 'number') {
-    console.error('❌ bar1 должен быть числом для продукта', product.id)
+    error('❌ bar1 должен быть числом для продукта', product.id)
     return false
   }
   
   if (product.bar2 !== undefined && typeof product.bar2 !== 'number') {
-    console.error('❌ bar2 должен быть числом для продукта', product.id)
+    error('❌ bar2 должен быть числом для продукта', product.id)
     return false
   }
   
   if (product.cold_room !== undefined && typeof product.cold_room !== 'number') {
-    console.error('❌ cold_room должен быть числом для продукта', product.id)
+    error('❌ cold_room должен быть числом для продукта', product.id)
     return false
   }
   
@@ -194,32 +195,32 @@ function chunkArray(array, size) {
  */
 async function executeRPCWithRetry(batch, batchIndex, totalBatches, attemptNumber = 1) {
   try {
-    console.log(`📤 Батч ${batchIndex + 1}/${totalBatches}: попытка ${attemptNumber}/${MAX_RETRIES}`)
+    log(`📤 Батч ${batchIndex + 1}/${totalBatches}: попытка ${attemptNumber}/${MAX_RETRIES}`)
     
     // Вызываем RPC функцию
-    const { data, error } = await supabaseClient
+    const { data, error: rpcError } = await supabaseClient
       .rpc('bulk_update_products', {
         product_updates: batch
       })
       .single()
-    
+
     // ============================================================
     // ОБРАБОТКА ОШИБКИ ОТ SUPABASE
     // ============================================================
-    if (error) {
-      console.error(`❌ Ошибка RPC в батче ${batchIndex + 1}:`, error)
-      
+    if (rpcError) {
+      error(`❌ Ошибка RPC в батче ${batchIndex + 1}:`, rpcError)
+
       // Проверяем, можно ли повторить
-      if (isRetryableError(error) && attemptNumber < MAX_RETRIES) {
+      if (isRetryableError(rpcError) && attemptNumber < MAX_RETRIES) {
         const retryDelay = INITIAL_RETRY_DELAY * Math.pow(RETRY_DELAY_MULTIPLIER, attemptNumber - 1)
-        console.warn(`⚠️ Повтор через ${retryDelay}мс...`)
-        
+        warn(`⚠️ Повтор через ${retryDelay}мс...`)
+
         await delay(retryDelay)
         return executeRPCWithRetry(batch, batchIndex, totalBatches, attemptNumber + 1)
       }
-      
+
       // Не можем повторить - выбрасываем ошибку
-      throw error
+      throw rpcError
     }
     
     // ============================================================
@@ -231,37 +232,37 @@ async function executeRPCWithRetry(batch, batchIndex, totalBatches, attemptNumbe
     
     // Проверяем структуру ответа
     if (typeof data.updated_count !== 'number' || typeof data.failed_count !== 'number') {
-      console.error('❌ Некорректная структура ответа:', data)
+      error('❌ Некорректная структура ответа:', data)
       throw new Error('Некорректный ответ от сервера')
     }
     
-    console.log(`✅ Батч ${batchIndex + 1}/${totalBatches} завершен:`, {
+    log(`✅ Батч ${batchIndex + 1}/${totalBatches} завершен:`, {
       updated: data.updated_count,
       failed: data.failed_count
     })
     
     return data
     
-  } catch (error) {
+  } catch (err) {
     // ============================================================
     // ОБРАБОТКА НЕОЖИДАННЫХ ОШИБОК (CORS, Network, и т.д.)
     // ============================================================
-    
-    console.error(`❌ Критическая ошибка в батче ${batchIndex + 1}:`, error)
-    
+
+    error(`❌ Критическая ошибка в батче ${batchIndex + 1}:`, err)
+
     // Проверяем, можно ли повторить
-    if (isRetryableError(error) && attemptNumber < MAX_RETRIES) {
+    if (isRetryableError(err) && attemptNumber < MAX_RETRIES) {
       const retryDelay = INITIAL_RETRY_DELAY * Math.pow(RETRY_DELAY_MULTIPLIER, attemptNumber - 1)
-      console.warn(`⚠️ Обнаружена ${isCORSError(error) ? 'CORS' : 'сетевая'} ошибка`)
-      console.warn(`⚠️ Повтор через ${retryDelay}мс... (попытка ${attemptNumber + 1}/${MAX_RETRIES})`)
-      
+      warn(`⚠️ Обнаружена ${isCORSError(err) ? 'CORS' : 'сетевая'} ошибка`)
+      warn(`⚠️ Повтор через ${retryDelay}мс... (попытка ${attemptNumber + 1}/${MAX_RETRIES})`)
+
       await delay(retryDelay)
       return executeRPCWithRetry(batch, batchIndex, totalBatches, attemptNumber + 1)
     }
-    
+
     // Исчерпали все попытки
-    console.error(`❌ Все ${MAX_RETRIES} попытки исчерпаны для батча ${batchIndex + 1}`)
-    throw error
+    error(`❌ Все ${MAX_RETRIES} попытки исчерпаны для батча ${batchIndex + 1}`)
+    throw err
   }
 }
 
@@ -305,18 +306,18 @@ export async function bulkUpdateProducts(products, availableColumns) {
   }
 
   const startTime = performance.now()
-  console.log(`🔄 Обновление ${products.length} продуктов, колонки: [${availableColumns}]`)
+  log(`🔄 Обновление ${products.length} продуктов, колонки: [${availableColumns}]`)
 
   const preparedProducts = prepareProductData(products, availableColumns)
   
   if (preparedProducts.length === 0) {
-    const error = new Error('Все продукты не прошли валидацию')
-    console.error('❌', error.message)
-    throw error
+    const validationError = new Error('Все продукты не прошли валидацию')
+    error('❌', validationError.message)
+    throw validationError
   }
   
   if (preparedProducts.length < products.length) {
-    console.warn(
+    warn(
       `⚠️ Отфильтровано ${products.length - preparedProducts.length} невалидных продуктов`
     )
   }
@@ -326,7 +327,7 @@ export async function bulkUpdateProducts(products, availableColumns) {
   // ============================================================
   
   const batches = chunkArray(preparedProducts, MAX_BATCH_SIZE)
-  console.log(`📦 Создано ${batches.length} батч(ей) для обновления`)
+  log(`📦 Создано ${batches.length} батч(ей) для обновления`)
   
   // ============================================================
   // ВЫПОЛНЕНИЕ RPC ЗАПРОСОВ С RETRY
@@ -360,25 +361,25 @@ export async function bulkUpdateProducts(products, availableColumns) {
         await delay(100)
       }
       
-    } catch (error) {
+    } catch (err) {
       // Критическая ошибка - батч не выполнен даже после retry
-      console.error(`❌ Критическая ошибка в батче ${i + 1}:`, error)
-      
-      criticalError = error
-      
+      error(`❌ Критическая ошибка в батче ${i + 1}:`, err)
+
+      criticalError = err
+
       // Помечаем все продукты батча как failed
       const batchSize = batches[i].length
       results.failed += batchSize
       results.errors.push({
         batch_index: i + 1,
         products_count: batchSize,
-        error: error.message || 'Unknown error',
-        is_cors_error: isCORSError(error),
-        user_message: getUserFriendlyErrorMessage(error)
+        error: err.message || 'Unknown error',
+        is_cors_error: isCORSError(err),
+        user_message: getUserFriendlyErrorMessage(err)
       })
-      
+
       // Если это CORS ошибка, пробуем продолжить с другими батчами
-      if (!isCORSError(error)) {
+      if (!isCORSError(err)) {
         // Для других ошибок - прерываем
         break
       }
@@ -392,10 +393,10 @@ export async function bulkUpdateProducts(products, availableColumns) {
   const duration = performance.now() - startTime
   const success = results.failed === 0 && !criticalError
   
-  console.log(`${success ? '✅' : '⚠️'} Готово: ${results.updated}/${results.total} за ${Math.round(duration)}мс`)
+  log(`${success ? '✅' : '⚠️'} Готово: ${results.updated}/${results.total} за ${Math.round(duration)}мс`)
   
   if (results.errors.length > 0) {
-    console.error('❌ Детали ошибок:', results.errors)
+    error('❌ Детали ошибок:', results.errors)
   }
   
   // Формируем понятное сообщение для пользователя

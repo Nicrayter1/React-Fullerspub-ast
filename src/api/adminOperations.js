@@ -19,6 +19,7 @@
  */
 
 import { supabaseClient } from './supabase'
+import { log, warn, error, isDev } from '../utils/logger'
 
 /**
  * ============================================================
@@ -42,7 +43,7 @@ import { supabaseClient } from './supabase'
  */
 export async function freezeProduct(productId, userEmail, options = {}) {
   try {
-    console.log(`❄️ Заморозка продукта ${productId} пользователем ${userEmail}`)
+    log(`❄️ Заморозка продукта ${productId} пользователем ${userEmail}`)
 
     const {
       hideFromBar1 = true,
@@ -57,7 +58,7 @@ export async function freezeProduct(productId, userEmail, options = {}) {
       .single()
 
     if (fetchError) {
-      console.error('❌ Ошибка получения продукта:', fetchError)
+      error('❌ Ошибка получения продукта:', fetchError)
       throw fetchError
     }
 
@@ -67,7 +68,7 @@ export async function freezeProduct(productId, userEmail, options = {}) {
 
     // Проверяем, не заморожен ли уже продукт
     if (product.is_frozen) {
-      console.warn('⚠️ Продукт уже заморожен')
+      warn('⚠️ Продукт уже заморожен')
       return {
         success: false,
         error: 'Продукт уже заморожен',
@@ -76,7 +77,7 @@ export async function freezeProduct(productId, userEmail, options = {}) {
     }
 
     // Обновляем продукт - устанавливаем флаг заморозки
-    const { data, error } = await supabaseClient
+    const { data: freezeData, error: freezeError } = await supabaseClient
       .from('products')
       .update({
         is_frozen: true,
@@ -89,23 +90,23 @@ export async function freezeProduct(productId, userEmail, options = {}) {
       .select()
       .single()
 
-    if (error) {
-      console.error('❌ Ошибка заморозки продукта:', error)
-      throw error
+    if (freezeError) {
+      error('❌ Ошибка заморозки продукта:', freezeError)
+      throw freezeError
     }
 
-    console.log('✅ Продукт успешно заморожен')
+    log('✅ Продукт успешно заморожен')
     return {
       success: true,
-      data: data,
+      data: freezeData,
       message: `Продукт "${product.name}" заморожен`
     }
 
-  } catch (error) {
-    console.error('❌ Критическая ошибка заморозки:', error)
+  } catch (err) {
+    error('❌ Критическая ошибка заморозки:', err)
     return {
       success: false,
-      error: error.message
+      error: err.message
     }
   }
 }
@@ -120,7 +121,7 @@ export async function freezeProduct(productId, userEmail, options = {}) {
  */
 export async function unfreezeProduct(productId, userEmail) {
   try {
-    console.log(`🔥 Разморозка продукта ${productId} пользователем ${userEmail}`)
+    log(`🔥 Разморозка продукта ${productId} пользователем ${userEmail}`)
 
     // Получаем информацию о продукте перед разморозкой
     const { data: product, error: fetchError } = await supabaseClient
@@ -130,7 +131,7 @@ export async function unfreezeProduct(productId, userEmail) {
       .single()
 
     if (fetchError) {
-      console.error('❌ Ошибка получения продукта:', fetchError)
+      error('❌ Ошибка получения продукта:', fetchError)
       throw fetchError
     }
 
@@ -140,7 +141,7 @@ export async function unfreezeProduct(productId, userEmail) {
 
     // Проверяем, заморожен ли продукт
     if (!product.is_frozen) {
-      console.warn('⚠️ Продукт не заморожен')
+      warn('⚠️ Продукт не заморожен')
       return {
         success: false,
         error: 'Продукт не заморожен',
@@ -149,7 +150,7 @@ export async function unfreezeProduct(productId, userEmail) {
     }
 
     // Обновляем продукт - снимаем флаг заморозки
-    const { data, error } = await supabaseClient
+    const { data: unfreezeData, error: unfreezeError } = await supabaseClient
       .from('products')
       .update({
         is_frozen: false,
@@ -162,23 +163,23 @@ export async function unfreezeProduct(productId, userEmail) {
       .select()
       .single()
 
-    if (error) {
-      console.error('❌ Ошибка разморозки продукта:', error)
-      throw error
+    if (unfreezeError) {
+      error('❌ Ошибка разморозки продукта:', unfreezeError)
+      throw unfreezeError
     }
 
-    console.log('✅ Продукт успешно разморожен')
+    log('✅ Продукт успешно разморожен')
     return {
       success: true,
-      data: data,
+      data: unfreezeData,
       message: `Продукт "${product.name}" разморожен`
     }
 
-  } catch (error) {
-    console.error('❌ Критическая ошибка разморозки:', error)
+  } catch (err) {
+    error('❌ Критическая ошибка разморозки:', err)
     return {
       success: false,
-      error: error.message
+      error: err.message
     }
   }
 }
@@ -199,7 +200,7 @@ export async function unfreezeProduct(productId, userEmail) {
  */
 export async function deleteProduct(productId, userEmail) {
   try {
-    console.log(`🗑️ Удаление продукта ${productId} пользователем ${userEmail}`)
+    log(`🗑️ Удаление продукта ${productId} пользователем ${userEmail}`)
 
     // Получаем информацию о продукте перед удалением
     const { data: product, error: fetchError } = await supabaseClient
@@ -209,7 +210,7 @@ export async function deleteProduct(productId, userEmail) {
       .single()
 
     if (fetchError) {
-      console.error('❌ Ошибка получения продукта:', fetchError)
+      error('❌ Ошибка получения продукта:', fetchError)
       throw fetchError
     }
 
@@ -218,28 +219,28 @@ export async function deleteProduct(productId, userEmail) {
     }
 
     // Выполняем удаление
-    const { error } = await supabaseClient
+    const { error: deleteError } = await supabaseClient
       .from('products')
       .delete()
       .eq('id', productId)
 
-    if (error) {
-      console.error('❌ Ошибка удаления продукта:', error)
-      throw error
+    if (deleteError) {
+      error('❌ Ошибка удаления продукта:', deleteError)
+      throw deleteError
     }
 
-    console.log('✅ Продукт успешно удален')
+    log('✅ Продукт успешно удален')
     return {
       success: true,
       message: `Продукт "${product.name}" удален`,
       deletedProduct: product
     }
 
-  } catch (error) {
-    console.error('❌ Критическая ошибка удаления:', error)
+  } catch (err) {
+    error('❌ Критическая ошибка удаления:', err)
     return {
       success: false,
-      error: error.message
+      error: err.message
     }
   }
 }
@@ -262,7 +263,7 @@ export async function deleteProduct(productId, userEmail) {
  */
 export async function updateProductsOrder(products, userEmail, categoryId = null) {
   try {
-    console.log(`🔄 Обновление порядка ${products.length} продуктов пользователем ${userEmail}`)
+    log(`🔄 Обновление порядка ${products.length} продуктов пользователем ${userEmail}`)
 
     if (!products || products.length === 0) {
       return {
@@ -292,10 +293,10 @@ export async function updateProductsOrder(products, userEmail, categoryId = null
     const successful = results.filter(r => r.status === 'fulfilled').length
     const failed = results.filter(r => r.status === 'rejected').length
 
-    console.log(`✅ Обновлено ${successful} из ${products.length} продуктов`)
+    log(`✅ Обновлено ${successful} из ${products.length} продуктов`)
 
     if (failed > 0) {
-      console.warn(`⚠️ Не удалось обновить ${failed} продуктов`)
+      warn(`⚠️ Не удалось обновить ${failed} продуктов`)
     }
 
     return {
@@ -308,11 +309,11 @@ export async function updateProductsOrder(products, userEmail, categoryId = null
         : `Обновлено ${successful} из ${products.length} продуктов`
     }
 
-  } catch (error) {
-    console.error('❌ Критическая ошибка обновления порядка:', error)
+  } catch (err) {
+    error('❌ Критическая ошибка обновления порядка:', err)
     return {
       success: false,
-      error: error.message,
+      error: err.message,
       updated: 0,
       failed: products.length
     }
