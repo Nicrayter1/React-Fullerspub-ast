@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 
 // ─── Дефолтный шаблон ────────────────────────────────────────────────────────
 const DEFAULT_TEMPLATE = {
@@ -143,7 +144,7 @@ export default function OrderTemplateEditor({ onClose, sampleItems }) {
 
   const previewText = buildTextFromTemplate(tpl, 'Дистрибьютор', previewItems)
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[200] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
 
@@ -271,5 +272,5 @@ export default function OrderTemplateEditor({ onClose, sampleItems }) {
         </div>
       </div>
     </div>
-  )
+  , document.body)
 }
