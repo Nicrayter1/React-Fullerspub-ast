@@ -23,6 +23,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { bulkUpdateProducts } from './bulkOperations'
 import { delay } from '../utils/helpers'
+import { log, warn, error, isDev } from '../utils/logger'
 
 // ============================================================
 // КОНФИГУРАЦИЯ SUPABASE
@@ -32,29 +33,36 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Проверка наличия переменных окружения
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('❌ Ошибка: Необходимо настроить переменные окружения')
-  console.error('   VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY')
+const isEnvConfigured = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
+
+if (!isEnvConfigured) {
+  error('❌ Ошибка: Необходимо настроить переменные окружения')
+  error('   VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY')
 }
 
 /**
  * ============================================================
  * КЛИЕНТ SUPABASE
  * ============================================================
- * 
+ *
  * Создаем клиент для взаимодействия с Supabase
  * Настройки аутентификации:
  * - persistSession: сохраняет сессию в localStorage
  * - autoRefreshToken: автоматически обновляет токен
  * - detectSessionInUrl: определяет сессию из URL (для OAuth)
+ *
+ * Если переменные окружения не настроены — возвращаем null,
+ * чтобы не крашить модуль и показать страницу настройки.
  */
-export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
-})
+export const supabaseClient = isEnvConfigured
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
+  : null
 
 /**
  * ============================================================
@@ -109,10 +117,10 @@ class SupabaseAPI {
       query = query.eq('category_id', categoryId)
     }
 
-    const { data, error } = await query
+    const { data, error: qError } = await query
 
-    if (error) {
-      console.error(`❌ Ошибка получения max order_index (${table}):`, error)
+    if (qError) {
+      error(`❌ Ошибка получения max order_index (${table}):`, qError)
       return 9999
     }
 
@@ -137,21 +145,21 @@ class SupabaseAPI {
       throw new Error('Supabase клиент не инициализирован')
     }
 
-    console.log('📦 Загрузка категорий...')
+    log('📦 Загрузка категорий...')
     
     // Выполняем запрос к таблице categories
-    const { data, error } = await this.client
+    const { data, error: qError } = await this.client
       .from('categories')
       .select('*')
       .order('order_index')
 
     // Обработка ошибок
-    if (error) {
-      console.error('❌ Ошибка загрузки категорий:', error)
-      throw error
+    if (qError) {
+      error('❌ Ошибка загрузки категорий:', qError)
+      throw qError
     }
     
-    console.log(`✅ Загружено ${data.length} категорий`)
+    log(`✅ Загружено ${data.length} категорий`)
     return data
   }
 
@@ -172,22 +180,22 @@ class SupabaseAPI {
       throw new Error('Supabase клиент не инициализирован')
     }
 
-    console.log('📦 Загрузка продуктов...')
+    log('📦 Загрузка продуктов...')
     
     // Выполняем запрос к таблице products
     // nullsLast: true - продукты без order_index в конце списка
-    const { data, error } = await this.client
+    const { data, error: qError } = await this.client
       .from('products')
       .select('*')
       .order('order_index', { nullsLast: true })
 
     // Обработка ошибок
-    if (error) {
-      console.error('❌ Ошибка загрузки продуктов:', error)
-      throw error
+    if (qError) {
+      error('❌ Ошибка загрузки продуктов:', qError)
+      throw qError
     }
     
-    console.log(`✅ Загружено ${data.length} продуктов`)
+    log(`✅ Загружено ${data.length} продуктов`)
     return data
   }
 
@@ -217,14 +225,14 @@ class SupabaseAPI {
       throw new Error('Supabase клиент не инициализирован')
     }
 
-    console.log('➕ Создание нового продукта:', productData.name)
+    log('➕ Создание нового продукта:', productData.name)
 
     try {
       // Считаем order_index прямо из базы: MAX по этой категории + 1
       // Это защищает от дубликатов при удалениях (см. getNextOrderIndex)
       const orderIndex = await this.getNextOrderIndex('products', productData.category_id)
 
-      const { data, error } = await this.client
+      const { data, error: insertError } = await this.client
         .from('products')
         .insert([{
           category_id: productData.category_id,
@@ -241,17 +249,17 @@ class SupabaseAPI {
         .select()
         .single()
 
-      if (error) {
-        console.error('❌ Ошибка создания продукта:', error)
-        throw error
+      if (insertError) {
+        error('❌ Ошибка создания продукта:', insertError)
+        throw insertError
       }
 
-      console.log('✅ Продукт создан с ID:', data.id, '| order_index:', orderIndex)
+      log('✅ Продукт создан с ID:', data.id, '| order_index:', orderIndex)
       return data
 
-    } catch (error) {
-      console.error('❌ Критическая ошибка вставки продукта:', error)
-      throw error
+    } catch (err) {
+      error('❌ Критическая ошибка вставки продукта:', err)
+      throw err
     }
   }
 
@@ -276,14 +284,14 @@ class SupabaseAPI {
       throw new Error('Supabase клиент не инициализирован')
     }
 
-    console.log('➕ Создание новой категории:', categoryData.name)
+    log('➕ Создание новой категории:', categoryData.name)
 
     try {
       // Считаем order_index прямо из базы: MAX по всем категориям + 1
       // Это защищает от дубликатов при удалениях (см. getNextOrderIndex)
       const orderIndex = await this.getNextOrderIndex('categories')
 
-      const { data, error } = await this.client
+      const { data, error: insertError } = await this.client
         .from('categories')
         .insert([{
           name: categoryData.name,
@@ -292,17 +300,17 @@ class SupabaseAPI {
         .select()
         .single()
 
-      if (error) {
-        console.error('❌ Ошибка создания категории:', error)
-        throw error
+      if (insertError) {
+        error('❌ Ошибка создания категории:', insertError)
+        throw insertError
       }
 
-      console.log('✅ Категория создана с ID:', data.id, '| order_index:', orderIndex)
+      log('✅ Категория создана с ID:', data.id, '| order_index:', orderIndex)
       return data
 
-    } catch (error) {
-      console.error('❌ Критическая ошибка вставки категории:', error)
-      throw error
+    } catch (err) {
+      error('❌ Критическая ошибка вставки категории:', err)
+      throw err
     }
   }
 
@@ -336,39 +344,39 @@ class SupabaseAPI {
 
     try {
       // Выполняем UPDATE для конкретного продукта
-      const { error } = await this.client
+      const { error: updateError } = await this.client
         .from('products')
         .update(updates)
         .eq('id', productId)
 
       // Если есть ошибка - выбрасываем
-      if (error) throw error
-      
+      if (updateError) throw updateError
+
       // Успешное обновление
       return { success: true, productId }
-      
-    } catch (error) {
+
+    } catch (err) {
       // Retry логика для сетевых ошибок
       // Проверяем: есть ли попытки и это сетевая ошибка?
       if (retryCount < 2 && (
-        error.message.includes('fetch') || 
-        error.message.includes('network')
+        err.message.includes('fetch') ||
+        err.message.includes('network')
       )) {
-        console.warn(`⚠️ Повтор обновления продукта ${productId}, попытка ${retryCount + 1}`)
-        
+        warn(`⚠️ Повтор обновления продукта ${productId}, попытка ${retryCount + 1}`)
+
         // Задержка с увеличением: 1 сек, 2 сек
         await delay(1000 * (retryCount + 1))
-        
+
         // Рекурсивный вызов с увеличенным счетчиком
         return this.updateProductStock(productId, updates, retryCount + 1)
       }
-      
+
       // Все попытки исчерпаны или не сетевая ошибка
-      console.error(`❌ Ошибка обновления продукта ${productId}:`, error)
-      return { 
-        success: false, 
-        productId, 
-        error: error.message 
+      error(`❌ Ошибка обновления продукта ${productId}:`, err)
+      return {
+        success: false,
+        productId,
+        error: err.message
       }
     }
   }
@@ -425,7 +433,7 @@ class SupabaseAPI {
     
     // Проверка что есть продукты для синхронизации
     if (!products || products.length === 0) {
-      console.log('⚠️ syncAll: нет продуктов для синхронизации')
+      log('⚠️ syncAll: нет продуктов для синхронизации')
       return { 
         success: true, 
         total: 0, 
@@ -438,7 +446,7 @@ class SupabaseAPI {
       }
     }
 
-    console.log(`🔄 Начало синхронизации ${products.length} продуктов через Bulk RPC...`)
+    log(`🔄 Начало синхронизации ${products.length} продуктов через Bulk RPC...`)
     
     // ============================================================
     // ВЫЗОВ BULK RPC ФУНКЦИИ
@@ -454,7 +462,7 @@ class SupabaseAPI {
       // ============================================================
       
       // Логируем краткую статистику
-      console.log('📊 Результат синхронизации:', {
+      log('📊 Результат синхронизации:', {
         success: result.success,
         updated: result.updated,
         failed: result.failed,
@@ -469,22 +477,22 @@ class SupabaseAPI {
       // Анализируем тип результата и логируем соответственно
       if (result.success) {
         // Полный успех - все продукты обновлены
-        console.log('✅ Синхронизация завершена успешно')
+        log('✅ Синхронизация завершена успешно')
       } else if (result.updated > 0) {
         // Частичный успех - часть продуктов обновлена
-        console.warn(`⚠️ Частичная синхронизация: ${result.updated}/${result.total}`)
+        warn(`⚠️ Частичная синхронизация: ${result.updated}/${result.total}`)
         
         // Проверяем были ли CORS ошибки
         if (result.hasCORSErrors) {
-          console.warn('⚠️ Обнаружены CORS ошибки - возможно проблема с сетью')
+          warn('⚠️ Обнаружены CORS ошибки - возможно проблема с сетью')
         }
       } else {
         // Полный провал - ни один продукт не обновлен
-        console.error('❌ Синхронизация не удалась')
+        error('❌ Синхронизация не удалась')
         
         // Проверяем причину провала
         if (result.hasCORSErrors) {
-          console.error('❌ Причина: CORS/сетевые ошибки')
+          error('❌ Причина: CORS/сетевые ошибки')
         }
       }
       
@@ -494,23 +502,23 @@ class SupabaseAPI {
       
       // Если есть ошибки - показываем их в консоли
       if (result.errors.length > 0) {
-        console.group('📋 Детали ошибок:')
-        result.errors.forEach((error, index) => {
-          console.error(`${index + 1}.`, error)
+        if (isDev) { console.group('📋 Детали ошибок:') }
+        result.errors.forEach((err, index) => {
+          error(`${index + 1}.`, err)
         })
-        console.groupEnd()
+        if (isDev) { console.groupEnd() }
       }
       
       // Возвращаем результат для обработки в UI
       return result
       
-    } catch (error) {
+    } catch (err) {
       // ============================================================
       // ОБРАБОТКА КРИТИЧЕСКИХ ОШИБОК
       // ============================================================
-      
-      console.error('❌ Критическая ошибка синхронизации:', error)
-      
+
+      error('❌ Критическая ошибка синхронизации:', err)
+
       // Формируем понятный ответ даже при критической ошибке
       // Это гарантирует что UI всегда получит структурированный результат
       return {
@@ -519,13 +527,13 @@ class SupabaseAPI {
         updated: 0,
         failed: products.length,
         errors: [{
-          error: error.message || 'Unknown error',
+          error: err.message || 'Unknown error',
           type: 'critical'
         }],
         duration: 0,
-        userMessage: `❌ Критическая ошибка: ${error.message || 'Не удалось подключиться к серверу'}`,
-        hasCORSErrors: error.message?.toLowerCase().includes('cors') || 
-                       error.message?.toLowerCase().includes('network')
+        userMessage: `❌ Критическая ошибка: ${err.message || 'Не удалось подключиться к серверу'}`,
+        hasCORSErrors: err.message?.toLowerCase().includes('cors') ||
+                       err.message?.toLowerCase().includes('network')
       }
     }
   }

@@ -3,7 +3,7 @@
  * Управляет состоянием и координирует работу всех компонентов
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Save, Upload, Download, RefreshCw, LogOut, User, Settings } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -15,6 +15,7 @@ import NumberEditModal from './components/NumberEditModal'
 import ProductList from './ProductList'
 import Button from './components/ui/Button'
 import AddModal from './components/AddModal'
+import ConfirmModal from './components/ConfirmModal'
 import Card from './components/ui/Card'
 
 // Импорт утилит
@@ -23,6 +24,9 @@ import { exportToCSV } from './utils/export'
 
 // Импорт API
 import supabaseAPI from './api/supabase'
+import { log, warn, error, isDev } from './utils/logger'
+
+const FALLBACK_ORDER_INDEX = 99999
 
 function MainApp() {
   const { user, userProfile, signOut, getAvailableColumns } = useAuth()
@@ -52,8 +56,18 @@ function MainApp() {
     type: 'product' // 'product' | 'category'
   })
 
+  // Диалоги подтверждения
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Подтвердить',
+    confirmVariant: 'danger',
+    onConfirm: null
+  })
+
   // Доступные колонки для текущего пользователя
-  const availableColumns = getAvailableColumns()
+  const availableColumns = useMemo(() => getAvailableColumns(), [userProfile?.role])
 
   // === АВТО-СИНХРОНИЗАЦИЯ LOCALSTORAGE ===
   useEffect(() => {
@@ -81,8 +95,8 @@ function MainApp() {
         setProducts(prods)
         return { categories: cats, products: prods }
       }
-    } catch (error) {
-      console.error('Ошибка загрузки из localStorage:', error)
+    } catch (err) {
+      error('Ошибка загрузки из localStorage:', err)
     }
     return null
   }, [])
@@ -132,21 +146,21 @@ function MainApp() {
       // Показываем уведомление о начале загрузки
       showNotification('Загрузка данных из базы...', 'info')
       
-      console.log('📦 Загрузка данных из Supabase...')
+      log('📦 Загрузка данных из Supabase...')
       
       // ============================================================
       // ЗАГРУЗКА КАТЕГОРИЙ
       // ============================================================
-      console.log('📂 Загрузка категорий...')
+      log('📂 Загрузка категорий...')
       const cats = await supabaseAPI.fetchCategories()
-      console.log(`✅ Загружено ${cats.length} категорий`)
+      log(`✅ Загружено ${cats.length} категорий`)
       
       // ============================================================
       // ЗАГРУЗКА ПРОДУКТОВ
       // ============================================================
-      console.log('📦 Загрузка продуктов...')
+      log('📦 Загрузка продуктов...')
       const prods = await supabaseAPI.fetchProducts()
-      console.log(`✅ Загружено ${prods.length} продуктов`)
+      log(`✅ Загружено ${prods.length} продуктов`)
       
       // ============================================================
       // ОБОГАЩЕНИЕ ДАННЫХ
@@ -157,7 +171,7 @@ function MainApp() {
         return {
           ...product,
           category_name:        cat?.name       || 'Без категории',
-          category_order_index: cat?.order_index ?? 99999
+          category_order_index: cat?.order_index ?? FALLBACK_ORDER_INDEX
         }
       })
       
@@ -170,27 +184,27 @@ function MainApp() {
       // ============================================================
       // УСПЕШНОЕ ЗАВЕРШЕНИЕ
       // ============================================================
-      console.log('✅ Данные загружены из Supabase')
+      log('✅ Данные загружены из Supabase')
       showNotification(
         `✅ Загружено: ${cats.length} категорий, ${prods.length} продуктов`,
         'success'
       )
       
-    } catch (error) {
+    } catch (err) {
       // ============================================================
       // ОБРАБОТКА ОШИБОК
       // ============================================================
-      console.error('❌ Ошибка загрузки из Supabase:', error)
-      
+      error('❌ Ошибка загрузки из Supabase:', err)
+
       // Формируем понятное сообщение об ошибке
       let errorMessage = 'Ошибка загрузки из БД'
-      
-      if (error.message?.includes('fetch') || error.message?.includes('network')) {
+
+      if (err.message?.includes('fetch') || err.message?.includes('network')) {
         errorMessage += ': Проблема с подключением'
-      } else if (error.message?.includes('не инициализирован')) {
+      } else if (err.message?.includes('не инициализирован')) {
         errorMessage += ': Не настроен Supabase'
       } else {
-        errorMessage += `: ${error.message}`
+        errorMessage += `: ${err.message}`
       }
       
       showNotification(errorMessage + '. Используем локальные данные.', 'warning')
@@ -244,14 +258,14 @@ const saveToSupabase = useCallback(async () => {
     // Показываем уведомление о начале сохранения
     showNotification(`Сохранение ${products.length} продуктов в базу...`, 'info')
     
-    console.log(`💾 Начало сохранения ${products.length} продуктов...`)
+    log(`💾 Начало сохранения ${products.length} продуктов...`)
     
     // ============================================================
     // ВЫЗОВ API - Массовое обновление
     // ============================================================
     const result = await supabaseAPI.syncAll(products, availableColumns)
     
-    console.log('✅ Результат сохранения:', result)
+    log('✅ Результат сохранения:', result)
     
     // ============================================================
     // АНАЛИЗ РЕЗУЛЬТАТА И ПОКАЗ УВЕДОМЛЕНИЯ
@@ -277,51 +291,51 @@ const saveToSupabase = useCallback(async () => {
       
       // Логируем детали ошибок
       if (result.errors && result.errors.length > 0) {
-        console.group('📋 Детали ошибок сохранения:')
-        result.errors.forEach((error, index) => {
-          console.error(`${index + 1}.`, error)
+        if (isDev) { console.group('📋 Детали ошибок сохранения:') }
+        result.errors.forEach((err, index) => {
+          error(`${index + 1}.`, err)
         })
-        console.groupEnd()
+        if (isDev) { console.groupEnd() }
       }
-      
+
     } else {
       // ============================================================
       // ПОЛНЫЙ ПРОВАЛ - Ни один продукт не сохранен
       // ============================================================
-      
+
       // Проверяем есть ли понятное сообщение от API
-      const errorMsg = result.userMessage || 
+      const errorMsg = result.userMessage ||
                       `Не удалось сохранить данные. ${result.failed} ошибок.`
-      
+
       showNotification(errorMsg, 'error')
-      
+
       // Логируем детали ошибок
       if (result.errors && result.errors.length > 0) {
-        console.group('📋 Детали ошибок сохранения:')
-        result.errors.forEach((error, index) => {
-          console.error(`${index + 1}.`, error)
+        if (isDev) { console.group('📋 Детали ошибок сохранения:') }
+        result.errors.forEach((err, index) => {
+          error(`${index + 1}.`, err)
         })
-        console.groupEnd()
+        if (isDev) { console.groupEnd() }
       }
     }
     
-  } catch (error) {
+  } catch (err) {
     // ============================================================
     // КРИТИЧЕСКАЯ ОШИБКА
     // ============================================================
-    console.error('❌ Критическая ошибка сохранения:', error)
-    
+    error('❌ Критическая ошибка сохранения:', err)
+
     // Формируем понятное сообщение об ошибке
     let errorMessage = 'Ошибка сохранения: '
-    
-    if (error.message?.includes('не удалось обновить')) {
-      errorMessage += error.message
-    } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
+
+    if (err.message?.includes('не удалось обновить')) {
+      errorMessage += err.message
+    } else if (err.message?.includes('fetch') || err.message?.includes('network')) {
       errorMessage += 'Проблема с подключением к серверу. Проверьте интернет.'
-    } else if (error.message?.includes('cors')) {
+    } else if (err.message?.includes('cors')) {
       errorMessage += 'Ошибка доступа к серверу (CORS). Попробуйте еще раз.'
     } else {
-      errorMessage += error.message || 'Неизвестная ошибка'
+      errorMessage += err.message || 'Неизвестная ошибка'
     }
     
     showNotification(errorMessage, 'error')
@@ -332,20 +346,25 @@ const saveToSupabase = useCallback(async () => {
     // ============================================================
     // КРИТИЧНО: Всегда сбрасываем loading, даже если была ошибка
     setLoading(false)
-    console.log('🏁 Сохранение завершено, loading = false')
+    log('🏁 Сохранение завершено, loading = false')
   }
 }, [products, availableColumns, showNotification])
 
   /**
    * Синхронизация с Supabase (загрузка свежих данных)
    */
-  const syncWithSupabase = useCallback(async () => {
-    if (window.confirm('Загрузить данные из базы? Текущие изменения будут потеряны.')) {
-      console.log('🔄 Пользователь подтвердил синхронизацию')
-      await loadFromSupabase()
-    } else {
-      console.log('❌ Синхронизация отменена пользователем')
-    }
+  const syncWithSupabase = useCallback(() => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Синхронизация',
+      message: 'Загрузить данные из базы? Текущие изменения будут потеряны.',
+      confirmLabel: 'Загрузить',
+      confirmVariant: 'info',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }))
+        await loadFromSupabase()
+      }
+    })
   }, [loadFromSupabase])
 
   // === ИНИЦИАЛИЗАЦИЯ ===
@@ -356,14 +375,14 @@ const saveToSupabase = useCallback(async () => {
    */
   useEffect(() => {
     const init = async () => {
-      console.log('🚀 Инициализация приложения...')
+      log('🚀 Инициализация приложения...')
       
       // Пробуем загрузить из localStorage
       const localData = loadFromLocalStorage()
       const hasData = localData && localData.products.length > 0
       
       if (!hasData) {
-        console.log('📥 Локальных данных нет, загружаем из Supabase...')
+        log('📥 Локальных данных нет, загружаем из Supabase...')
         // Если нет локальных данных, загружаем из Supabase
         if (supabaseAPI.client) {
           await loadFromSupabase()
@@ -371,7 +390,7 @@ const saveToSupabase = useCallback(async () => {
           showNotification('Настройте подключение к Supabase', 'info')
         }
       } else {
-        console.log('✅ Данные загружены из localStorage')
+        log('✅ Данные загружены из localStorage')
       }
     }
     
@@ -381,7 +400,7 @@ const saveToSupabase = useCallback(async () => {
 
   // === ОБРАБОТЧИКИ ДЕЙСТВИЙ ===
 
-  const handleEdit = (product, field) => {
+  const handleEdit = useCallback((product, field) => {
     // Проверяем, что пользователь имеет доступ к этой колонке
     if (!availableColumns.includes(field)) {
       showNotification('У вас нет доступа к редактированию этой колонки', 'error')
@@ -399,9 +418,9 @@ const saveToSupabase = useCallback(async () => {
       field,
       title: `${product.name} - ${titles[field]}`
     })
-  }
+  }, [availableColumns, showNotification])
 
-  const handleConfirmEdit = (value) => {
+  const handleConfirmEdit = useCallback((value) => {
     const numValue = parseNumber(value)
     setProducts(prev => prev.map(p =>
       p.id === editModal.product.id
@@ -409,7 +428,7 @@ const saveToSupabase = useCallback(async () => {
         : p
     ))
     setEditModal({ isOpen: false, product: null, field: '', title: '' })
-  }
+  }, [editModal.product, editModal.field])
 
   /**
    * ============================================================
@@ -467,24 +486,24 @@ const saveToSupabase = useCallback(async () => {
           // Вызываем метод insertCategory из supabaseAPI
           // PostgreSQL автоматически сгенерирует ID через SERIAL
           const newCategory = await supabaseAPI.insertCategory({
-            name: category
+            name
           })
-          
+
           // ============================================================
           // ОБНОВЛЕНИЕ ЛОКАЛЬНОГО СОСТОЯНИЯ
           // ============================================================
           // Добавляем новую категорию в массив categories
           setCategories(prev => [...prev, newCategory])
-          
+
           // Показываем успешное уведомление
-          showNotification(`Категория "${category}" добавлена`, 'success')
+          showNotification(`Категория "${name}" добавлена`, 'success')
           
-        } catch (error) {
+        } catch (err) {
           // ============================================================
           // ОБРАБОТКА ОШИБОК
           // ============================================================
-          console.error('❌ Ошибка добавления категории:', error)
-          showNotification(`Ошибка: ${error.message}`, 'error')
+          error('❌ Ошибка добавления категории:', err)
+          showNotification(`Ошибка: ${err.message}`, 'error')
         } finally {
           // Всегда убираем индикатор загрузки
           setLoading(false)
@@ -542,12 +561,12 @@ const saveToSupabase = useCallback(async () => {
         // Показываем успешное уведомление
         showNotification(`Продукт "${name}" добавлен`, 'success')
         
-      } catch (error) {
+      } catch (err) {
         // ============================================================
         // ОБРАБОТКА ОШИБОК
         // ============================================================
-        console.error('❌ Ошибка добавления продукта:', error)
-        showNotification(`Ошибка: ${error.message}`, 'error')
+        error('❌ Ошибка добавления продукта:', err)
+        showNotification(`Ошибка: ${err.message}`, 'error')
       } finally {
         // Всегда убираем индикатор загрузки
         setLoading(false)
@@ -561,16 +580,24 @@ const saveToSupabase = useCallback(async () => {
     setAddModal({ isOpen: false, type: 'product' })
   }
 
-  const handleExport = () => {
-    exportToCSV(gitproducts, categories)
+  const handleExport = useCallback(() => {
+    exportToCSV(products, categories)
     showNotification('CSV файл скачивается...', 'success')
-  }
+  }, [products, categories, showNotification])
 
-  const handleSignOut = async () => {
-    if (window.confirm('Вы уверены, что хотите выйти?')) {
-      await signOut()
-    }
-  }
+  const handleSignOut = useCallback(() => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Выход',
+      message: 'Вы уверены, что хотите выйти?',
+      confirmLabel: 'Выйти',
+      confirmVariant: 'danger',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }))
+        await signOut()
+      }
+    })
+  }, [signOut])
 
   // Получение отображаемого имени роли
   const getRoleDisplayName = (role) => {
@@ -725,6 +752,16 @@ const saveToSupabase = useCallback(async () => {
         categories={categories}
         onClose={() => setAddModal({ isOpen: false, type: 'product' })}
         onAdd={handleAddItem}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        confirmVariant={confirmModal.confirmVariant}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
   )

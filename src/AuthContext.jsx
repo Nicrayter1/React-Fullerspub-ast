@@ -9,6 +9,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabaseClient } from './api/supabase'
+import { log, warn, error, isDev } from './utils/logger'
 
 // Создание контекста
 const AuthContext = createContext(null)
@@ -31,25 +32,25 @@ export const useAuth = () => {
  */
 const getRoleFromEmail = (email) => {
   if (!email) {
-    console.warn('⚠️ getRoleFromEmail: email is null')
+    warn('⚠️ getRoleFromEmail: email is null')
     return 'bar1' // По умолчанию
   }
   
   const emailLower = email.toLowerCase()
-  console.log('🔍 Определение роли для email:', emailLower)
+  log('🔍 Определение роли для email:', emailLower)
   
   if (emailLower === 'manager@fullerspub.local') {
-    console.log('✅ Роль: manager')
+    log('✅ Роль: manager')
     return 'manager'
   } else if (emailLower === 'bar1@fullerspub.local') {
-    console.log('✅ Роль: bar1')
+    log('✅ Роль: bar1')
     return 'bar1'
   } else if (emailLower === 'bar2@fullerspub.local') {
-    console.log('✅ Роль: bar2')
+    log('✅ Роль: bar2')
     return 'bar2'
   }
   
-  console.warn('⚠️ Неизвестный email, используем роль bar1 по умолчанию')
+  warn('⚠️ Неизвестный email, используем роль bar1 по умолчанию')
   return 'bar1'
 }
 
@@ -60,11 +61,11 @@ const getRoleFromEmail = (email) => {
  */
 const createUserProfile = (user) => {
   if (!user) {
-    console.warn('⚠️ createUserProfile: user is null')
+    warn('⚠️ createUserProfile: user is null')
     return null
   }
   
-  console.log('👤 Создание профиля для:', user.email)
+  log('👤 Создание профиля для:', user.email)
   
   const role = getRoleFromEmail(user.email)
   
@@ -76,7 +77,7 @@ const createUserProfile = (user) => {
     updated_at: user.updated_at
   }
   
-  console.log('✅ Создан профиль:', profile)
+  log('✅ Создан профиль:', profile)
   
   return profile
 }
@@ -89,35 +90,47 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [configError, setConfigError] = useState(null)
 
   /**
    * ИСПРАВЛЕНО: Инициализация с определением роли по email
    */
   useEffect(() => {
+    // Если Supabase не настроен — сразу завершаем загрузку с ошибкой конфигурации
+    if (!supabaseClient) {
+      setConfigError(
+        'Создайте файл .env в корне проекта:\n' +
+        'VITE_SUPABASE_URL=https://your-project.supabase.co\n' +
+        'VITE_SUPABASE_ANON_KEY=your_anon_key_here'
+      )
+      setLoading(false)
+      return
+    }
+
     const initAuth = async () => {
       try {
-        console.log('🔐 Инициализация аутентификации...')
+        log('🔐 Инициализация аутентификации...')
         
         // Получаем текущую сессию
-        const { data: { session }, error } = await supabaseClient.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
 
-        if (error) {
-          console.error('❌ Ошибка получения сессии:', error)
-          throw error
+        if (sessionError) {
+          error('❌ Ошибка получения сессии:', sessionError)
+          throw sessionError
         }
 
         if (session?.user) {
-          console.log('✅ Сессия найдена:', session.user.email)
+          log('✅ Сессия найдена:', session.user.email)
           setUser(session.user)
-          
+
           // Создаем профиль на основе email (БЕЗ запроса к базе)
           const profile = createUserProfile(session.user)
           setUserProfile(profile)
         } else {
-          console.log('ℹ️ Активной сессии нет')
+          log('ℹ️ Активной сессии нет')
         }
-      } catch (error) {
-        console.error('❌ Ошибка инициализации auth:', error)
+      } catch (err) {
+        error('❌ Ошибка инициализации auth:', err)
         setUser(null)
         setUserProfile(null)
       } finally {
@@ -130,10 +143,10 @@ export const AuthProvider = ({ children }) => {
     // Подписка на изменения состояния аутентификации
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Auth state change:', event)
+        log('🔄 Auth state change:', event)
         
         if (event === 'SIGNED_IN' && session?.user) {
-          console.log('✅ Пользователь вошел:', session.user.email)
+          log('✅ Пользователь вошел:', session.user.email)
           setUser(session.user)
           
           // Создаем профиль на основе email (БЕЗ запроса к базе)
@@ -141,7 +154,7 @@ export const AuthProvider = ({ children }) => {
           setUserProfile(profile)
           
         } else if (event === 'SIGNED_OUT') {
-          console.log('👋 Пользователь вышел')
+          log('👋 Пользователь вышел')
           setUser(null)
           setUserProfile(null)
         }
@@ -158,35 +171,38 @@ export const AuthProvider = ({ children }) => {
    * ИСПРАВЛЕНО: Вход пользователя с определением роли по email
    */
   const signIn = async (email, password) => {
+    if (!supabaseClient) {
+      return { success: false, error: 'Supabase не настроен. Проверьте файл .env' }
+    }
     try {
       setLoading(true)
-      console.log('🔐 Попытка входа:', email)
+      log('🔐 Попытка входа:', email)
 
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
+      const { data, error: signInError } = await supabaseClient.auth.signInWithPassword({
         email,
         password
       })
 
-      if (error) {
-        console.error('❌ Ошибка входа:', error)
-        throw error
+      if (signInError) {
+        error('❌ Ошибка входа:', signInError)
+        throw signInError
       }
 
       if (data.user) {
-        console.log('✅ Вход успешен:', data.user.email)
+        log('✅ Вход успешен:', data.user.email)
         setUser(data.user)
-        
+
         // Создаем профиль на основе email (БЕЗ запроса к базе)
         const profile = createUserProfile(data.user)
         setUserProfile(profile)
-        
+
         return { success: true, user: data.user, profile }
       }
 
       return { success: false, error: 'Неизвестная ошибка' }
-    } catch (error) {
-      console.error('❌ Ошибка входа:', error)
-      return { success: false, error: error.message }
+    } catch (err) {
+      error('❌ Ошибка входа:', err)
+      return { success: false, error: err.message }
     } finally {
       setLoading(false)
     }
@@ -196,15 +212,20 @@ export const AuthProvider = ({ children }) => {
    * Выход пользователя
    */
   const signOut = async () => {
+    if (!supabaseClient) {
+      setUser(null)
+      setUserProfile(null)
+      return
+    }
     try {
       setLoading(true)
-      console.log('👋 Выход пользователя...')
+      log('👋 Выход пользователя...')
       
-      const { error } = await supabaseClient.auth.signOut()
+      const { error: signOutError } = await supabaseClient.auth.signOut()
 
-      if (error) {
-        console.error('❌ Ошибка выхода:', error)
-        throw error
+      if (signOutError) {
+        error('❌ Ошибка выхода:', signOutError)
+        throw signOutError
       }
 
       setUser(null)
@@ -212,10 +233,10 @@ export const AuthProvider = ({ children }) => {
 
       // Очищаем localStorage от данных приложения
       localStorage.removeItem('barStockData')
-      console.log('✅ Выход выполнен, localStorage очищен')
-      
-    } catch (error) {
-      console.error('❌ Ошибка выхода:', error)
+      log('✅ Выход выполнен, localStorage очищен')
+
+    } catch (err) {
+      error('❌ Ошибка выхода:', err)
       // Даже если ошибка, пытаемся очистить локальное состояние
       setUser(null)
       setUserProfile(null)
@@ -230,12 +251,12 @@ export const AuthProvider = ({ children }) => {
    * @returns {Array<string>} Массив доступных колонок
    */
   const getAvailableColumns = () => {
-    console.log('🔍 getAvailableColumns вызвана')
-    console.log('📧 User email:', user?.email)
-    console.log('🎭 User role:', userProfile?.role)
+    log('🔍 getAvailableColumns вызвана')
+    log('📧 User email:', user?.email)
+    log('🎭 User role:', userProfile?.role)
     
     if (!userProfile?.role) {
-      console.warn('⚠️ Роль не определена, возвращаем пустой массив')
+      warn('⚠️ Роль не определена, возвращаем пустой массив')
       return []
     }
 
@@ -244,18 +265,18 @@ export const AuthProvider = ({ children }) => {
     switch (userProfile.role) {
       case 'manager':
         columns = ['bar1', 'bar2', 'cold_room']
-        console.log('✅ Manager role: все колонки', columns)
+        log('✅ Manager role: все колонки', columns)
         break
       case 'bar1':
         columns = ['bar1', 'cold_room']
-        console.log('✅ Bar1 role: bar1 и cold_room', columns)
+        log('✅ Bar1 role: bar1 и cold_room', columns)
         break
       case 'bar2':
         columns = ['bar2']
-        console.log('✅ Bar2 role: только bar2', columns)
+        log('✅ Bar2 role: только bar2', columns)
         break
       default:
-        console.warn('⚠️ Неизвестная роль:', userProfile.role)
+        warn('⚠️ Неизвестная роль:', userProfile.role)
         columns = []
     }
     
@@ -267,6 +288,7 @@ export const AuthProvider = ({ children }) => {
     user,
     userProfile,
     loading,
+    configError,
     signIn,
     signOut,
     getAvailableColumns

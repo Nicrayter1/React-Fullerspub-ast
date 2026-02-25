@@ -18,6 +18,7 @@
  */
 
 import { supabaseClient } from './supabase'
+import { log, warn, error, isDev } from '../utils/logger'
 
 /**
  * ============================================================
@@ -64,7 +65,7 @@ export const SCENARIO_TYPES = {
  */
 export async function runScenario(scenarioType, userEmail) {
   try {
-    console.log(`🎬 Запуск сценария: ${scenarioType}`)
+    log(`🎬 Запуск сценария: ${scenarioType}`)
     
     // Получить конфигурацию сценария
     const scenario = Object.values(SCENARIO_TYPES).find(s => s.id === scenarioType)
@@ -81,11 +82,11 @@ export async function runScenario(scenarioType, userEmail) {
       .select('id, name, ' + scenario.flag)
     
     if (fetchError) {
-      console.error('❌ Ошибка получения продуктов:', fetchError)
+      error('❌ Ошибка получения продуктов:', fetchError)
       throw fetchError
     }
     
-    console.log(`📊 Всего продуктов: ${allProducts.length}`)
+    log(`📊 Всего продуктов: ${allProducts.length}`)
     
     // ============================================================
     // ШАГ 2: Разделить на две группы
@@ -93,8 +94,8 @@ export async function runScenario(scenarioType, userEmail) {
     const withFlag = allProducts.filter(p => p[scenario.flag] === true)
     const withoutFlag = allProducts.filter(p => p[scenario.flag] === false)
     
-    console.log(`✅ С флагом ${scenario.icon}: ${withFlag.length}`)
-    console.log(`❌ Без флага: ${withoutFlag.length}`)
+    log(`✅ С флагом ${scenario.icon}: ${withFlag.length}`)
+    log(`❌ Без флага: ${withoutFlag.length}`)
     
     // ============================================================
     // ШАГ 3: Заморозить продукты БЕЗ флага
@@ -114,11 +115,11 @@ export async function runScenario(scenarioType, userEmail) {
         .in('id', idsToFreeze)
       
       if (freezeError) {
-        console.error('❌ Ошибка заморозки:', freezeError)
+        error('❌ Ошибка заморозки:', freezeError)
         throw freezeError
       }
       
-      console.log(`❄️ Заморожено: ${withoutFlag.length} позиций`)
+      log(`❄️ Заморожено: ${withoutFlag.length} позиций`)
     }
     
     // ============================================================
@@ -139,11 +140,11 @@ export async function runScenario(scenarioType, userEmail) {
         .in('id', idsToUnfreeze)
       
       if (unfreezeError) {
-        console.error('❌ Ошибка разморозки:', unfreezeError)
+        error('❌ Ошибка разморозки:', unfreezeError)
         throw unfreezeError
       }
       
-      console.log(`🔥 Разморожено: ${withFlag.length} позиций`)
+      log(`🔥 Разморожено: ${withFlag.length} позиций`)
     }
     
     // ============================================================
@@ -157,11 +158,11 @@ export async function runScenario(scenarioType, userEmail) {
       message: `Сценарий "${scenario.name}" запущен. Активно: ${withFlag.length}, заморожено: ${withoutFlag.length}`
     }
     
-  } catch (error) {
-    console.error('❌ Критическая ошибка запуска сценария:', error)
+  } catch (err) {
+    error('❌ Критическая ошибка запуска сценария:', err)
     return {
       success: false,
-      error: error.message
+      error: err.message
     }
   }
 }
@@ -177,12 +178,12 @@ export async function runScenario(scenarioType, userEmail) {
  */
 export async function stopAllScenarios() {
   try {
-    console.log('⏹️ Остановка всех сценариев')
+    log('⏹️ Остановка всех сценариев')
     
     // ============================================================
     // Разморозить ВСЕ продукты
     // ============================================================
-    const { error } = await supabaseClient
+    const { error: stopError } = await supabaseClient
       .from('products')
       .update({
         is_frozen: false,
@@ -192,24 +193,24 @@ export async function stopAllScenarios() {
         frozen_by: null
       })
       .neq('id', 0) // Все продукты (условие всегда true)
-    
-    if (error) {
-      console.error('❌ Ошибка разморозки:', error)
-      throw error
+
+    if (stopError) {
+      error('❌ Ошибка разморозки:', stopError)
+      throw stopError
     }
-    
-    console.log('✅ Все продукты разморожены')
-    
+
+    log('✅ Все продукты разморожены')
+
     return {
       success: true,
       message: 'Все сценарии остановлены. Все продукты активны.'
     }
-    
-  } catch (error) {
-    console.error('❌ Критическая ошибка остановки сценариев:', error)
+
+  } catch (err) {
+    error('❌ Критическая ошибка остановки сценариев:', err)
     return {
       success: false,
-      error: error.message
+      error: err.message
     }
   }
 }
@@ -225,12 +226,12 @@ export async function stopAllScenarios() {
  */
 export async function getFlagsStatistics() {
   try {
-    const { data: products, error } = await supabaseClient
+    const { data: products, error: fetchError } = await supabaseClient
       .from('products')
       .select('red_flag, green_flag, yellow_flag')
-    
-    if (error) throw error
-    
+
+    if (fetchError) throw fetchError
+
     const stats = {
       total: products.length,
       red: products.filter(p => p.red_flag).length,
@@ -238,17 +239,17 @@ export async function getFlagsStatistics() {
       yellow: products.filter(p => p.yellow_flag).length,
       noFlags: products.filter(p => !p.red_flag && !p.green_flag && !p.yellow_flag).length
     }
-    
+
     return {
       success: true,
       stats
     }
-    
-  } catch (error) {
-    console.error('❌ Ошибка получения статистики:', error)
+
+  } catch (err) {
+    error('❌ Ошибка получения статистики:', err)
     return {
       success: false,
-      error: error.message
+      error: err.message
     }
   }
 }
@@ -264,9 +265,9 @@ export async function getFlagsStatistics() {
  */
 export async function updateProductFlags(productId, flags) {
   try {
-    console.log(`🏴 Обновление флагов для продукта ${productId}:`, flags)
+    log(`🏴 Обновление флагов для продукта ${productId}:`, flags)
     
-    const { error } = await supabaseClient
+    const { error: updateError } = await supabaseClient
       .from('products')
       .update({
         red_flag: flags.red ?? false,
@@ -274,16 +275,16 @@ export async function updateProductFlags(productId, flags) {
         yellow_flag: flags.yellow ?? false
       })
       .eq('id', productId)
-    
-    if (error) throw error
-    
+
+    if (updateError) throw updateError
+
     return { success: true }
-    
-  } catch (error) {
-    console.error('❌ Ошибка обновления флагов:', error)
+
+  } catch (err) {
+    error('❌ Ошибка обновления флагов:', err)
     return {
       success: false,
-      error: error.message
+      error: err.message
     }
   }
 }
