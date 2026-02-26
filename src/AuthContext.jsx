@@ -1,9 +1,10 @@
 /**
  * Контекст аутентификации
  * Управляет состоянием пользователя и сессии
- * 
+ *
  * ИСПРАВЛЕНО:
- * - Роль определяется по email вместо запроса к user_profiles
+ * - Роль загружается из таблицы user_profiles в БД (больше нет хардкода по email)
+ * - Если профиль не найден в БД — вход блокируется с понятной ошибкой
  * - Добавлены логи для отладки
  */
 
@@ -26,60 +27,33 @@ export const useAuth = () => {
 }
 
 /**
- * НОВОЕ: Определение роли пользователя по email
- * @param {string} email - Email пользователя
- * @returns {string} Роль пользователя
- */
-const getRoleFromEmail = (email) => {
-  if (!email) {
-    warn('⚠️ getRoleFromEmail: email is null')
-    return 'bar1' // По умолчанию
-  }
-  
-  const emailLower = email.toLowerCase()
-  log('🔍 Определение роли для email:', emailLower)
-  
-  if (emailLower === 'manager@fullerspub.local') {
-    log('✅ Роль: manager')
-    return 'manager'
-  } else if (emailLower === 'bar1@fullerspub.local') {
-    log('✅ Роль: bar1')
-    return 'bar1'
-  } else if (emailLower === 'bar2@fullerspub.local') {
-    log('✅ Роль: bar2')
-    return 'bar2'
-  }
-  
-  warn('⚠️ Неизвестный email, используем роль bar1 по умолчанию')
-  return 'bar1'
-}
-
-/**
- * НОВОЕ: Создание объекта профиля из данных пользователя
+ * Загружает профиль пользователя из таблицы user_profiles по его id.
+ * Роль берётся из БД — хардкода по email больше нет.
+ *
  * @param {Object} user - Объект пользователя из Supabase Auth
- * @returns {Object} Профиль пользователя
+ * @returns {Object|null} Профиль из БД или null если не найден / ошибка
  */
-const createUserProfile = (user) => {
+const fetchProfileFromDB = async (user) => {
   if (!user) {
-    warn('⚠️ createUserProfile: user is null')
+    warn('⚠️ fetchProfileFromDB: user is null')
     return null
   }
-  
-  log('👤 Создание профиля для:', user.email)
-  
-  const role = getRoleFromEmail(user.email)
-  
-  const profile = {
-    id: user.id,
-    email: user.email,
-    role: role,
-    created_at: user.created_at,
-    updated_at: user.updated_at
+
+  log('👤 Запрашиваем профиль из user_profiles для:', user.email)
+
+  const { data, error: profileError } = await supabaseClient
+    .from('user_profiles')
+    .select('id, email, role, created_at, updated_at')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError) {
+    error('❌ Ошибка получения профиля из БД:', profileError)
+    return null
   }
-  
-  log('✅ Создан профиль:', profile)
-  
-  return profile
+
+  log('✅ Профиль получен из БД:', data)
+  return data
 }
 
 /**
@@ -93,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   const [configError, setConfigError] = useState(null)
 
   /**
-   * ИСПРАВЛЕНО: Инициализация с определением роли по email
+   * Инициализация: восстанавливаем сессию и загружаем профиль из БД
    */
   useEffect(() => {
     // Если Supabase не настроен — сразу завершаем загрузку с ошибкой конфигурации
@@ -123,8 +97,14 @@ export const AuthProvider = ({ children }) => {
           log('✅ Сессия найдена:', session.user.email)
           setUser(session.user)
 
-          // Создаем профиль на основе email (БЕЗ запроса к базе)
-          const profile = createUserProfile(session.user)
+          // Загружаем профиль и роль из таблицы user_profiles
+          const profile = await fetchProfileFromDB(session.user)
+          if (!profile) {
+            error('❌ Профиль не найден в user_profiles. Добавьте запись в таблицу.')
+            setUser(null)
+            setLoading(false)
+            return
+          }
           setUserProfile(profile)
         } else {
           log('ℹ️ Активной сессии нет')
@@ -148,11 +128,16 @@ export const AuthProvider = ({ children }) => {
         if (event === 'SIGNED_IN' && session?.user) {
           log('✅ Пользователь вошел:', session.user.email)
           setUser(session.user)
-          
-          // Создаем профиль на основе email (БЕЗ запроса к базе)
-          const profile = createUserProfile(session.user)
+
+          // Загружаем профиль и роль из таблицы user_profiles
+          const profile = await fetchProfileFromDB(session.user)
+          if (!profile) {
+            error('❌ Профиль не найден в user_profiles, сбрасываем сессию')
+            setUser(null)
+            return
+          }
           setUserProfile(profile)
-          
+
         } else if (event === 'SIGNED_OUT') {
           log('👋 Пользователь вышел')
           setUser(null)
@@ -168,7 +153,7 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   /**
-   * ИСПРАВЛЕНО: Вход пользователя с определением роли по email
+   * Вход пользователя — роль загружается из БД после успешной авторизации
    */
   const signIn = async (email, password) => {
     if (!supabaseClient) {
@@ -192,8 +177,13 @@ export const AuthProvider = ({ children }) => {
         log('✅ Вход успешен:', data.user.email)
         setUser(data.user)
 
-        // Создаем профиль на основе email (БЕЗ запроса к базе)
-        const profile = createUserProfile(data.user)
+        // Загружаем профиль и роль из таблицы user_profiles
+        const profile = await fetchProfileFromDB(data.user)
+        if (!profile) {
+          // Пользователь есть в auth, но записи в user_profiles нет — блокируем вход
+          await supabaseClient.auth.signOut()
+          return { success: false, error: 'Профиль пользователя не найден. Обратитесь к менеджеру.' }
+        }
         setUserProfile(profile)
 
         return { success: true, user: data.user, profile }
@@ -247,7 +237,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   /**
-   * ИСПРАВЛЕНО: Получение доступных колонок с отладочными логами
+   * Возвращает колонки, доступные пользователю, на основе роли из БД
    * @returns {Array<string>} Массив доступных колонок
    */
   const getAvailableColumns = () => {
