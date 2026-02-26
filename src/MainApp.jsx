@@ -1,706 +1,152 @@
-/**
- * Главный компонент приложения после авторизации
- * Управляет состоянием и координирует работу всех компонентов
- */
-
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { Save, Upload, Download, RefreshCw, LogOut, User, Settings } from 'lucide-react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { useAuth } from './AuthContext'
-import { useNavigate } from 'react-router-dom'
 
-// Импорт компонентов
+// Хуки
+import { useStockData } from './hooks/useStockData'
+import { useNotification } from './hooks/useNotification'
+import { useConfirmModal } from './hooks/useConfirmModal'
+
+// Компоненты
+import AppHeader from './components/AppHeader'
+import CategoryNav from './components/CategoryNav'
+import ActionBar from './components/ActionBar'
+import ProductList from './components/ProductList'
 import Notification from './components/Notification'
 import SearchInput from './components/SearchInput'
 import NumberEditModal from './components/NumberEditModal'
-import ProductList from './ProductList'
-import Button from './components/ui/Button'
 import AddModal from './components/AddModal'
 import ConfirmModal from './components/ConfirmModal'
 import Card from './components/ui/Card'
 
-// Импорт утилит
-import { parseNumber } from './utils/format'
+// Утилиты
 import { exportToCSV } from './utils/export'
-
-// Импорт API
 import supabaseAPI from './api/supabase'
-import { log, warn, error, isDev } from './utils/logger'
-
-const FALLBACK_ORDER_INDEX = 99999
+import { log } from './utils/logger'
 
 function MainApp() {
   const { user, userProfile, signOut, isSigningOut, getAvailableColumns } = useAuth()
-  const navigate = useNavigate()
 
-  // === STATE MANAGEMENT ===
-
-  // Данные
-  const [categories, setCategories] = useState([])
-  const [products, setProducts] = useState([])
-
-  // UI состояние
-  const [searchQuery, setSearchQuery] = useState('')
-  const [notification, setNotification] = useState({ message: '', type: 'info' })
-  const [loading, setLoading] = useState(false)
-  const [activeCategory, setActiveCategory] = useState(null)
-
-  // Модальные окна
-  const [editModal, setEditModal] = useState({
-    isOpen: false,
-    product: null,
-    field: '',
-    title: ''
-  })
-  const [addModal, setAddModal] = useState({
-    isOpen: false,
-    type: 'product' // 'product' | 'category'
-  })
-
-  // Диалоги подтверждения
-  const [confirmModal, setConfirmModal] = useState({
-    isOpen: false,
-    title: '',
-    message: '',
-    confirmLabel: 'Подтвердить',
-    confirmVariant: 'danger',
-    onConfirm: null
-  })
-
-  // Доступные колонки для текущего пользователя
   const availableColumns = useMemo(() => getAvailableColumns(), [userProfile?.role])
 
-  // === АВТО-СИНХРОНИЗАЦИЯ LOCALSTORAGE ===
+  // === ХУКИ ===
+  const { notification, showNotification, clearNotification } = useNotification()
+  const { confirmModal, openConfirmModal, closeConfirmModal } = useConfirmModal()
+  const {
+    categories,
+    products,
+    loading,
+    loadFromSupabase,
+    saveToSupabase,
+    handleAddItem,
+    handleConfirmEdit
+  } = useStockData({ showNotification, availableColumns })
+
+  // === UI STATE ===
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeCategory, setActiveCategory] = useState(null)
+  const [editModal, setEditModal] = useState({
+    isOpen: false, product: null, field: '', title: ''
+  })
+  const [addModal, setAddModal] = useState({
+    isOpen: false, type: 'product'
+  })
+
+  // === ИНИЦИАЛИЗАЦИЯ: всегда загружаем из Supabase ===
   useEffect(() => {
-    if (categories.length > 0 || products.length > 0) {
-      localStorage.setItem('barStockData', JSON.stringify({ categories, products }))
+    log('🚀 Инициализация — загрузка из Supabase...')
+    if (supabaseAPI.client) {
+      loadFromSupabase()
+    } else {
+      showNotification('Настройте подключение к Supabase', 'info')
     }
-  }, [categories, products])
-
-  // === УВЕДОМЛЕНИЯ ===
-
-  const showNotification = useCallback((message, type = 'info') => {
-    setNotification({ message, type })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // === РАБОТА С LOCALSTORAGE ===
+  // === ОБРАБОТЧИКИ ===
 
-  const loadFromLocalStorage = useCallback(() => {
-    try {
-      const saved = localStorage.getItem('barStockData')
-      if (saved) {
-        const data = JSON.parse(saved)
-        const cats = data.categories || []
-        const prods = data.products || []
-        setCategories(cats)
-        setProducts(prods)
-        return { categories: cats, products: prods }
-      }
-    } catch (err) {
-      error('Ошибка загрузки из localStorage:', err)
+  const handleEdit = useCallback((product, field) => {
+    if (!availableColumns.includes(field)) {
+      showNotification('У вас нет доступа к редактированию этой колонки', 'error')
+      return
     }
-    return null
-  }, [])
+    const titles = { bar1: 'Бар 1', bar2: 'Бар 2', cold_room: 'Холод. комната' }
+    setEditModal({ isOpen: true, product, field, title: `${product.name} - ${titles[field]}` })
+  }, [availableColumns, showNotification])
 
-  /**
-   * Сохранение в localStorage
-   * 
-   */
-  const saveToLocalStorage = useCallback((showNotif = false) => {
-  try {
-    localStorage.setItem('barStockData', JSON.stringify({ categories, products }))
-    if (showNotif) {
-      showNotification('✅ Данные сохранены локально!', 'success')
-    }
-    return true
-  } catch (error) {
-    showNotification('Ошибка сохранения: ' + error.message, 'error')
-    return false
-  }
-}, [categories, products, showNotification])
+  const handleEditConfirm = useCallback((value) => {
+    handleConfirmEdit(editModal.product.id, editModal.field, value)
+    setEditModal({ isOpen: false, product: null, field: '', title: '' })
+  }, [handleConfirmEdit, editModal.product, editModal.field])
 
-  // === РАБОТА С SUPABASE ===
+  const handleAddItemWrapper = useCallback(async (params) => {
+    const ok = await handleAddItem(params, addModal.type)
+    if (ok) setAddModal({ isOpen: false, type: 'product' })
+  }, [handleAddItem, addModal.type])
 
-  /**
-   * Загрузка данных из Supabase
-   */
-  /**
-   * ============================================================
-   * УЛУЧШЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ИЗ SUPABASE
-   * ============================================================
-   * 
-   * Версия: 3.0.0 - УЛУЧШЕНО
-   * 
-   * УЛУЧШЕНИЯ:
-   * ✅ Показывает уведомление "Загрузка..." сразу
-   * ✅ Показывает количество загруженных элементов
-   * ✅ Понятные сообщения об ошибках
-   * ============================================================
-   */
-  const loadFromSupabase = useCallback(async () => {
-    try {
-      // ============================================================
-      // НАЧАЛО ЗАГРУЗКИ
-      // ============================================================
-      setLoading(true)
-      
-      // Показываем уведомление о начале загрузки
-      showNotification('Загрузка данных из базы...', 'info')
-      
-      log('📦 Загрузка данных из Supabase...')
-      
-      // ============================================================
-      // ЗАГРУЗКА КАТЕГОРИЙ
-      // ============================================================
-      log('📂 Загрузка категорий...')
-      const cats = await supabaseAPI.fetchCategories()
-      log(`✅ Загружено ${cats.length} категорий`)
-      
-      // ============================================================
-      // ЗАГРУЗКА ПРОДУКТОВ
-      // ============================================================
-      log('📦 Загрузка продуктов...')
-      const prods = await supabaseAPI.fetchProducts()
-      log(`✅ Загружено ${prods.length} продуктов`)
-      
-      // ============================================================
-      // ОБОГАЩЕНИЕ ДАННЫХ
-      // ============================================================
-      // Добавляем название категории к каждому продукту
-      const enrichedProducts = prods.map(product => {
-        const cat = cats.find(c => c.id === product.category_id)
-        return {
-          ...product,
-          category_name:        cat?.name       || 'Без категории',
-          category_order_index: cat?.order_index ?? FALLBACK_ORDER_INDEX
-        }
-      })
-      
-      // ============================================================
-      // ОБНОВЛЕНИЕ СОСТОЯНИЯ
-      // ============================================================
-      setCategories(cats)
-      setProducts(enrichedProducts)
-
-      // ============================================================
-      // УСПЕШНОЕ ЗАВЕРШЕНИЕ
-      // ============================================================
-      log('✅ Данные загружены из Supabase')
-      showNotification(
-        `✅ Загружено: ${cats.length} категорий, ${prods.length} продуктов`,
-        'success'
-      )
-      
-    } catch (err) {
-      // ============================================================
-      // ОБРАБОТКА ОШИБОК
-      // ============================================================
-      error('❌ Ошибка загрузки из Supabase:', err)
-
-      // Формируем понятное сообщение об ошибке
-      let errorMessage = 'Ошибка загрузки из БД'
-
-      if (err.message?.includes('fetch') || err.message?.includes('network')) {
-        errorMessage += ': Проблема с подключением'
-      } else if (err.message?.includes('не инициализирован')) {
-        errorMessage += ': Не настроен Supabase'
-      } else {
-        errorMessage += `: ${err.message}`
-      }
-      
-      showNotification(errorMessage + '. Используем локальные данные.', 'warning')
-      
-      // Пытаемся загрузить из localStorage
-      loadFromLocalStorage()
-      
-    } finally {
-      // ============================================================
-      // ЗАВЕРШЕНИЕ
-      // ============================================================
-      setLoading(false)
-    }
-  }, [showNotification, loadFromLocalStorage])
-
- /**
- * ============================================================
- * УЛУЧШЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ В SUPABASE
- * ============================================================
- * 
- * Версия: 3.0.0 - УЛУЧШЕНО
- * 
- * УЛУЧШЕНИЯ:
- * ✅ Показывает уведомление "Сохранение..." сразу
- * ✅ Правильно обрабатывает result.updated вместо result.succeeded
- * ✅ Показывает warning при частичном успехе
- * ✅ Показывает error только при полном провале
- * ✅ Понятные сообщения для пользователя
- * 
- * Замените функцию saveToSupabase в MainApp.jsx (примерно строки 137-181)
- * ============================================================
- */
-
-const saveToSupabase = useCallback(async () => {
-  if (!availableColumns || availableColumns.length === 0) {
-    showNotification('Ошибка: не определены доступные колонки', 'error')
-    return
-  }
-
-  if (!products || products.length === 0) {
-    showNotification('Нет данных для сохранения', 'warning')
-    return
-  }
-
-  try {
-    // ============================================================
-    // НАЧАЛО СОХРАНЕНИЯ
-    // ============================================================
-    setLoading(true)
-    
-    // Показываем уведомление о начале сохранения
-    showNotification(`Сохранение ${products.length} продуктов в базу...`, 'info')
-    
-    log(`💾 Начало сохранения ${products.length} продуктов...`)
-    
-    // ============================================================
-    // ВЫЗОВ API - Массовое обновление
-    // ============================================================
-    const result = await supabaseAPI.syncAll(products, availableColumns)
-    
-    log('✅ Результат сохранения:', result)
-    
-    // ============================================================
-    // АНАЛИЗ РЕЗУЛЬТАТА И ПОКАЗ УВЕДОМЛЕНИЯ
-    // ============================================================
-    
-    if (result.success && result.updated === result.total) {
-      // ============================================================
-      // ПОЛНЫЙ УСПЕХ - Все продукты сохранены
-      // ============================================================
-      showNotification(
-        `✅ Данные сохранены в БД! Обновлено ${result.updated} продуктов`,
-        'success'
-      )
-      
-    } else if (result.updated > 0) {
-      // ============================================================
-      // ЧАСТИЧНЫЙ УСПЕХ - Часть продуктов сохранена
-      // ============================================================
-      showNotification(
-        `⚠️ Частично сохранено в БД: ${result.updated} из ${result.total} продуктов. ${result.failed} ошибок.`,
-        'warning'
-      )
-      
-      // Логируем детали ошибок
-      if (result.errors && result.errors.length > 0) {
-        if (isDev) { console.group('📋 Детали ошибок сохранения:') }
-        result.errors.forEach((err, index) => {
-          error(`${index + 1}.`, err)
-        })
-        if (isDev) { console.groupEnd() }
-      }
-
-    } else {
-      // ============================================================
-      // ПОЛНЫЙ ПРОВАЛ - Ни один продукт не сохранен
-      // ============================================================
-
-      // Проверяем есть ли понятное сообщение от API
-      const errorMsg = result.userMessage ||
-                      `Не удалось сохранить данные. ${result.failed} ошибок.`
-
-      showNotification(errorMsg, 'error')
-
-      // Логируем детали ошибок
-      if (result.errors && result.errors.length > 0) {
-        if (isDev) { console.group('📋 Детали ошибок сохранения:') }
-        result.errors.forEach((err, index) => {
-          error(`${index + 1}.`, err)
-        })
-        if (isDev) { console.groupEnd() }
-      }
-    }
-    
-  } catch (err) {
-    // ============================================================
-    // КРИТИЧЕСКАЯ ОШИБКА
-    // ============================================================
-    error('❌ Критическая ошибка сохранения:', err)
-
-    // Формируем понятное сообщение об ошибке
-    let errorMessage = 'Ошибка сохранения: '
-
-    if (err.message?.includes('не удалось обновить')) {
-      errorMessage += err.message
-    } else if (err.message?.includes('fetch') || err.message?.includes('network')) {
-      errorMessage += 'Проблема с подключением к серверу. Проверьте интернет.'
-    } else if (err.message?.includes('cors')) {
-      errorMessage += 'Ошибка доступа к серверу (CORS). Попробуйте еще раз.'
-    } else {
-      errorMessage += err.message || 'Неизвестная ошибка'
-    }
-    
-    showNotification(errorMessage, 'error')
-    
-  } finally {
-    // ============================================================
-    // ЗАВЕРШЕНИЕ
-    // ============================================================
-    // КРИТИЧНО: Всегда сбрасываем loading, даже если была ошибка
-    setLoading(false)
-    log('🏁 Сохранение завершено, loading = false')
-  }
-}, [products, availableColumns, showNotification])
-
-  /**
-   * Синхронизация с Supabase (загрузка свежих данных)
-   */
-  const syncWithSupabase = useCallback(() => {
-    setConfirmModal({
-      isOpen: true,
+  const handleSync = useCallback(() => {
+    openConfirmModal({
       title: 'Синхронизация',
       message: 'Загрузить данные из базы? Текущие изменения будут потеряны.',
       confirmLabel: 'Загрузить',
       confirmVariant: 'info',
       onConfirm: async () => {
-        setConfirmModal(prev => ({ ...prev, isOpen: false }))
+        closeConfirmModal()
         await loadFromSupabase()
       }
     })
-  }, [loadFromSupabase])
+  }, [openConfirmModal, closeConfirmModal, loadFromSupabase])
 
-  // === ИНИЦИАЛИЗАЦИЯ ===
-
-  /**
-   * Инициализация приложения при первом рендере
-   * Загружает данные из localStorage или Supabase
-   */
-  useEffect(() => {
-    const init = async () => {
-      log('🚀 Инициализация приложения...')
-      
-      // Пробуем загрузить из localStorage
-      const localData = loadFromLocalStorage()
-      const hasData = localData && localData.products.length > 0
-      
-      if (!hasData) {
-        log('📥 Локальных данных нет, загружаем из Supabase...')
-        // Если нет локальных данных, загружаем из Supabase
-        if (supabaseAPI.client) {
-          await loadFromSupabase()
-        } else {
-          showNotification('Настройте подключение к Supabase', 'info')
-        }
-      } else {
-        log('✅ Данные загружены из localStorage')
+  const handleSignOut = useCallback(() => {
+    openConfirmModal({
+      title: 'Выход',
+      message: 'Вы уверены, что хотите выйти?',
+      confirmLabel: 'Выйти',
+      confirmVariant: 'danger',
+      onConfirm: async () => {
+        closeConfirmModal()
+        await signOut()
       }
-    }
-    
-    init()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Выполняется только при первом монтировании
-
-  // === ОБРАБОТЧИКИ ДЕЙСТВИЙ ===
-
-  const handleEdit = useCallback((product, field) => {
-    // Проверяем, что пользователь имеет доступ к этой колонке
-    if (!availableColumns.includes(field)) {
-      showNotification('У вас нет доступа к редактированию этой колонки', 'error')
-      return
-    }
-
-    const titles = {
-      bar1: 'Бар 1',
-      bar2: 'Бар 2',
-      cold_room: 'Холод. комната'
-    }
-    setEditModal({
-      isOpen: true,
-      product,
-      field,
-      title: `${product.name} - ${titles[field]}`
     })
-  }, [availableColumns, showNotification])
-
-  const handleConfirmEdit = useCallback((value) => {
-    const numValue = parseNumber(value)
-    setProducts(prev => prev.map(p =>
-      p.id === editModal.product.id
-        ? { ...p, [editModal.field]: numValue }
-        : p
-    ))
-    setEditModal({ isOpen: false, product: null, field: '', title: '' })
-  }, [editModal.product, editModal.field])
-
-  /**
-   * ============================================================
-   * ОБРАБОТЧИК ДОБАВЛЕНИЯ ПРОДУКТА ИЛИ КАТЕГОРИИ
-   * ============================================================
-   * 
-   * ВЕРСИЯ v2.2.0 - ИСПРАВЛЕНО
-   * 
-   * ИСПРАВЛЕНИЯ:
-   * ✅ Использует INSERT запросы к Supabase вместо Date.now()
-   * ✅ PostgreSQL автоматически генерирует правильный ID
-   * ✅ Решена проблема "value out of range for type integer"
-   * ✅ Асинхронная функция с обработкой ошибок
-   * ✅ Показывает loading индикатор во время создания
-   * ✅ Автоматически сохраняет в localStorage
-   * 
-   * ПРОЦЕСС:
-   * 1. Проверка существования категории (для категорий)
-   * 2. Вызов insertCategory() или insertProduct() через API
-   * 3. PostgreSQL создает запись и возвращает её с ID
-   * 4. Добавление в локальное состояние
-   * 5. Сохранение в localStorage
-   * 6. Показ уведомления пользователю
-   * 
-   * @param {Object} params - Параметры добавления
-   * @param {string} params.category - Название категории
-   * @param {string} params.name - Название продукта (для продуктов)
-   * @param {string} params.volume - Объем продукта (для продуктов)
-   */
-  const handleAddItem = async ({ category, name, volume }) => {
-    // ============================================================
-    // ПОИСК КАТЕГОРИИ
-    // ============================================================
-    // category уже является числовым ID (передаётся из AddModal как parseInt)
-    const categoryObj = categories.find(c => c.id === category)
-
-    // ============================================================
-    // ДОБАВЛЕНИЕ КАТЕГОРИИ
-    // ============================================================
-    if (addModal.type === 'category') {
-      // Проверяем не существует ли уже такая категория (по имени, переданному в поле name)
-      const exists = categories.some(c =>
-        c.name.toLowerCase() === name.toLowerCase()
-      )
-      
-      if (!exists) {
-        try {
-          // Показываем индикатор загрузки
-          setLoading(true)
-          showNotification('Создание категории...', 'info')
-          
-          // ============================================================
-          // ВСТАВКА КАТЕГОРИИ В БД
-          // ============================================================
-          // Вызываем метод insertCategory из supabaseAPI
-          // PostgreSQL автоматически сгенерирует ID через SERIAL
-          const newCategory = await supabaseAPI.insertCategory({
-            name
-          })
-
-          // ============================================================
-          // ОБНОВЛЕНИЕ ЛОКАЛЬНОГО СОСТОЯНИЯ
-          // ============================================================
-          // Добавляем новую категорию в массив categories
-          setCategories(prev => [...prev, newCategory])
-
-          // Показываем успешное уведомление
-          showNotification(`Категория "${name}" добавлена`, 'success')
-          
-        } catch (err) {
-          // ============================================================
-          // ОБРАБОТКА ОШИБОК
-          // ============================================================
-          error('❌ Ошибка добавления категории:', err)
-          showNotification(`Ошибка: ${err.message}`, 'error')
-        } finally {
-          // Всегда убираем индикатор загрузки
-          setLoading(false)
-        }
-      } else {
-        // Категория уже существует
-        showNotification('Такая категория уже существует', 'error')
-      }
-    
-    // ============================================================
-    // ДОБАВЛЕНИЕ ПРОДУКТА
-    // ============================================================
-    } else {
-      // Проверяем что категория найдена
-      if (!categoryObj) {
-        showNotification('Категория не найдена', 'error')
-        return
-      }
-      
-      try {
-        // Показываем индикатор загрузки
-        setLoading(true)
-        showNotification('Создание продукта...', 'info')
-        
-        // ============================================================
-        // ВСТАВКА ПРОДУКТА В БД
-        // ============================================================
-        // Вызываем метод insertProduct из supabaseAPI
-        // PostgreSQL автоматически сгенерирует ID через SERIAL
-        // Это решает проблему с Date.now() (слишком большой ID)
-        const newProduct = await supabaseAPI.insertProduct({
-          category_id: categoryObj.id,
-          name,
-          volume,
-          bar1: 0,
-          bar2: 0,
-          cold_room: 0
-        })
-        
-        // ============================================================
-        // ОБОГАЩЕНИЕ ДАННЫХ
-        // ============================================================
-        // Добавляем название категории для удобства отображения
-        const enrichedProduct = {
-          ...newProduct,
-          category_name: categoryObj.name,
-          category_order_index: categoryObj.order_index ?? FALLBACK_ORDER_INDEX
-        }
-        
-        // ============================================================
-        // ОБНОВЛЕНИЕ ЛОКАЛЬНОГО СОСТОЯНИЯ
-        // ============================================================
-        // Добавляем новый продукт в массив products
-        setProducts(prev => [...prev, enrichedProduct])
-        
-        // Показываем успешное уведомление
-        showNotification(`Продукт "${name}" добавлен`, 'success')
-        
-      } catch (err) {
-        // ============================================================
-        // ОБРАБОТКА ОШИБОК
-        // ============================================================
-        error('❌ Ошибка добавления продукта:', err)
-        showNotification(`Ошибка: ${err.message}`, 'error')
-      } finally {
-        // Всегда убираем индикатор загрузки
-        setLoading(false)
-      }
-    }
-    
-    // ============================================================
-    // ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА
-    // ============================================================
-    // Закрываем модальное окно после завершения операции
-    setAddModal({ isOpen: false, type: 'product' })
-  }
+  }, [openConfirmModal, closeConfirmModal, signOut])
 
   const handleExport = useCallback(() => {
     exportToCSV(products, categories)
     showNotification('CSV файл скачивается...', 'success')
   }, [products, categories, showNotification])
 
-  const handleSignOut = useCallback(() => {
-    setConfirmModal({
-      isOpen: true,
-      title: 'Выход',
-      message: 'Вы уверены, что хотите выйти?',
-      confirmLabel: 'Выйти',
-      confirmVariant: 'danger',
-      onConfirm: async () => {
-        setConfirmModal(prev => ({ ...prev, isOpen: false }))
-        await signOut()
-      }
-    })
-  }, [signOut])
-
-  // Получение отображаемого имени роли
-  const getRoleDisplayName = (role) => {
-    const roleNames = {
-      manager: 'Менеджер',
-      bar1: 'Бар 1',
-      bar2: 'Бар 2'
-    }
-    return roleNames[role] || role
-  }
-
   // === RENDER ===
-
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
-      {/* Шапка с информацией о пользователе */}
-      <header className="bg-slate-900 dark:bg-gray-950 text-white p-4 shadow-lg sticky top-0 z-50 transition-colors">
-        <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
-          <h1 className="text-xl font-bold">Учет стоков бара</h1>
+      <AppHeader
+        user={user}
+        userProfile={userProfile}
+        onSignOut={handleSignOut}
+        isSigningOut={isSigningOut}
+      />
 
-          <div className="flex items-center gap-3 md:gap-4 flex-wrap">
-            <div className="flex items-center gap-2 bg-white/10 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-              <User className="w-5 h-5 text-gray-300" />
-              <div className="flex flex-col">
-                <span className="text-xs md:text-sm font-medium leading-tight">{user?.email}</span>
-                <span className="text-[10px] md:text-xs text-gray-400 leading-tight">{getRoleDisplayName(userProfile?.role)}</span>
-              </div>
-            </div>
-            {userProfile?.role === 'manager' && (
-              <Button
-                onClick={() => navigate('/admin')}
-                variant="primary"
-                size="sm"
-                className="bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-indigo-200 shadow-none"
-                icon={Settings}
-              >
-                <span className="hidden sm:inline">Админ-панель</span>
-              </Button>
-            )}
-            <Button
-              onClick={handleSignOut}
-              variant="danger"
-              size="sm"
-              loading={isSigningOut}
-              icon={LogOut}
-            >
-              <span className="hidden sm:inline">Выйти</span>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Основной контент */}
       <main className="p-4 md:p-6">
         <Card className="max-w-7xl mx-auto">
-          {/* Уведомления */}
           <Notification
             message={notification.message}
             type={notification.type}
-            onClose={() => setNotification({ message: '', type: 'info' })}
+            onClose={clearNotification}
           />
 
-          {/* Поиск */}
           <SearchInput value={searchQuery} onChange={setSearchQuery} />
 
-          {/* Навигация по категориям */}
-          <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700 overflow-x-auto">
-            <Button
-              variant={activeCategory === null ? 'primary' : 'ghost'}
-              size="sm"
-              className={`rounded-full whitespace-nowrap ${activeCategory !== null ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
-              onClick={() => setActiveCategory(null)}
-            >
-              Все
-            </Button>
-            {categories.map(cat => (
-              <Button
-                key={cat.id}
-                variant={activeCategory === cat.id ? 'primary' : 'ghost'}
-                size="sm"
-                className={`rounded-full whitespace-nowrap ${activeCategory !== cat.id ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
-                onClick={() => setActiveCategory(cat.id)}
-              >
-                {cat.name}
-              </Button>
-            ))}
-          </div>
+          <CategoryNav
+            categories={categories}
+            activeCategory={activeCategory}
+            onChange={setActiveCategory}
+          />
 
-          {/* Кнопки действий */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            <Button
-              onClick={syncWithSupabase}
-              loading={loading}
-              variant="info"
-              className="flex-1 min-w-[140px]"
-              icon={RefreshCw}
-            >
-              Синхронизировать
-            </Button>
-          </div>
+          <ActionBar
+            onSync={handleSync}
+            onSave={saveToSupabase}
+            onExport={handleExport}
+            loading={loading}
+          />
 
-          {/* Таблица продуктов */}
           <ProductList
             products={products}
             searchQuery={searchQuery}
@@ -708,44 +154,15 @@ const saveToSupabase = useCallback(async () => {
             availableColumns={availableColumns}
             onEdit={handleEdit}
           />
-
-          {/* Кнопки сохранения */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-8">
-            <Button
-              onClick={() => saveToLocalStorage(true)}
-              variant="secondary"
-              className="bg-blue-600 hover:bg-blue-700"
-              icon={Save}
-            >
-              Сохранить локально
-            </Button>
-            <Button
-              onClick={saveToSupabase}
-              loading={loading}
-              variant="primary"
-              icon={Upload}
-            >
-              Сохранить в БД
-            </Button>
-            <Button
-              onClick={handleExport}
-              variant="ghost"
-              className="bg-gray-600 hover:bg-gray-700 text-white"
-              icon={Download}
-            >
-              Экспорт CSV
-            </Button>
-          </div>
         </Card>
       </main>
 
-      {/* Модальные окна */}
       <NumberEditModal
         isOpen={editModal.isOpen}
         title={editModal.title}
         value={editModal.product?.[editModal.field]}
         onClose={() => setEditModal({ isOpen: false, product: null, field: '', title: '' })}
-        onConfirm={handleConfirmEdit}
+        onConfirm={handleEditConfirm}
       />
 
       <AddModal
@@ -753,7 +170,7 @@ const saveToSupabase = useCallback(async () => {
         type={addModal.type}
         categories={categories}
         onClose={() => setAddModal({ isOpen: false, type: 'product' })}
-        onAdd={handleAddItem}
+        onAdd={handleAddItemWrapper}
       />
 
       <ConfirmModal
@@ -763,7 +180,7 @@ const saveToSupabase = useCallback(async () => {
         confirmLabel={confirmModal.confirmLabel}
         confirmVariant={confirmModal.confirmVariant}
         onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onCancel={closeConfirmModal}
       />
     </div>
   )
