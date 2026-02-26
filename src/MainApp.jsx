@@ -29,7 +29,7 @@ import { log, warn, error, isDev } from './utils/logger'
 const FALLBACK_ORDER_INDEX = 99999
 
 function MainApp() {
-  const { user, userProfile, signOut, getAvailableColumns } = useAuth()
+  const { user, userProfile, signOut, isSigningOut, getAvailableColumns } = useAuth()
   const navigate = useNavigate()
 
   // === STATE MANAGEMENT ===
@@ -549,7 +549,8 @@ const saveToSupabase = useCallback(async () => {
         // Добавляем название категории для удобства отображения
         const enrichedProduct = {
           ...newProduct,
-          category_name: category
+          category_name: categoryObj.name,
+          category_order_index: categoryObj.order_index ?? FALLBACK_ORDER_INDEX
         }
         
         // ============================================================
@@ -641,6 +642,7 @@ const saveToSupabase = useCallback(async () => {
               onClick={handleSignOut}
               variant="danger"
               size="sm"
+              loading={isSigningOut}
               icon={LogOut}
             >
               <span className="hidden sm:inline">Выйти</span>

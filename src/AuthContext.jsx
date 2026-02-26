@@ -64,6 +64,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const [configError, setConfigError] = useState(null)
 
   /**
@@ -208,7 +209,7 @@ export const AuthProvider = ({ children }) => {
       return
     }
     try {
-      setLoading(true)
+      setIsSigningOut(true)
       log('👋 Выход пользователя...')
       
       const { error: signOutError } = await supabaseClient.auth.signOut()
@@ -232,7 +233,7 @@ export const AuthProvider = ({ children }) => {
       setUserProfile(null)
       localStorage.removeItem('barStockData')
     } finally {
-      setLoading(false)
+      setIsSigningOut(false)
     }
   }
 
@@ -278,6 +279,7 @@ export const AuthProvider = ({ children }) => {
     user,
     userProfile,
     loading,
+    isSigningOut,
     configError,
     signIn,
     signOut,
