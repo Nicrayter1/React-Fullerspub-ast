@@ -63,7 +63,10 @@ const ProtectedRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter basename="/React-Fullerspub-ast">
+      <BrowserRouter
+        basename="/React-Fullerspub-ast"
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
         <ProtectedRoutes />
       </BrowserRouter>
     </AuthProvider>
