@@ -562,7 +562,7 @@ const saveToSupabase = useCallback(async () => {
   }
 
   const handleExport = () => {
-    exportToCSV(gitproducts, categories)
+    exportToCSV(products, categories)
     showNotification('CSV файл скачивается...', 'success')
   }
 
